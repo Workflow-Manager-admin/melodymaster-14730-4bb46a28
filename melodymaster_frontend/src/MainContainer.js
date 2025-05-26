@@ -254,9 +254,24 @@ function MainContainer() {
   const [fileError, setFileError] = useState(""); // UI for upload errors
   const [userTracks, setUserTracks] = useState([]); // Uploaded tracks: {title, src, art, ...}
 
+  // EQ State: 3 bands (bass, mid, treble) in dB, default to 0
+  const [eqBands, setEqBands] = useState([0, 0, 0]);
+  // EQ Popup visibility
+  const [showEqPopup, setShowEqPopup] = useState(false);
+
+  // Web Audio API handling
   const audioRef = useRef(null);
   const progressRef = useRef(null);
   const fileInputRef = useRef();
+
+  // Store WebAudio nodes & context (init only once per session)
+  const [webAudio, setWebAudio] = useState({
+    context: null,
+    source: null,
+    eqNodes: null, // [bass, mid, treble]
+    destination: null,
+    setupDone: false
+  });
 
   // Merge uploaded tracks with default
   const allTracks = [...defaultTracks, ...userTracks];
@@ -266,6 +281,115 @@ function MainContainer() {
   const hasValidTracks = availableTracks.length > 0;
   const currentTrack = hasValidTracks ? availableTracks[currentIdx % availableTracks.length] : fallbackTrack;
   const cannotPlayAny = !canPlayAudioSrc(currentTrack.src);
+
+  // Setup Web Audio API: must be done after user gesture (on mount + whenever src changes)
+  useEffect(() => {
+    if (!audioRef.current) return;
+    let context, source, destination, filters;
+    let cleanup = () => {};
+    // Modern browsers create AudioContext only once per tab
+    if (!webAudio.context) {
+      context = new (window.AudioContext || window.webkitAudioContext)();
+      destination = context.destination;
+
+      // Filters
+      const bass = context.createBiquadFilter();
+      bass.type = "lowshelf";
+      bass.frequency.value = 80;
+      bass.gain.value = eqBands[0];
+
+      const mid = context.createBiquadFilter();
+      mid.type = "peaking";
+      mid.frequency.value = 1100;
+      mid.Q.value = 1;
+      mid.gain.value = eqBands[1];
+
+      const treble = context.createBiquadFilter();
+      treble.type = "highshelf";
+      treble.frequency.value = 7200;
+      treble.gain.value = eqBands[2];
+
+      // Audio source (media element)
+      source = context.createMediaElementSource(audioRef.current);
+      // Chain filters
+      source.connect(bass);
+      bass.connect(mid);
+      mid.connect(treble);
+      treble.connect(destination);
+
+      setWebAudio({
+        context, source, eqNodes: [bass, mid, treble], destination, setupDone: true
+      });
+
+      cleanup = () => {
+        // Disconnect everything
+        source && source.disconnect();
+        bass && bass.disconnect();
+        mid && mid.disconnect();
+        treble && treble.disconnect();
+      };
+    } else {
+      // context exists: just reconnect new src node and filters
+      context = webAudio.context;
+      let src = audioRef.current;
+      try {
+        // If previously chained, disconnect all
+        if (webAudio.source && webAudio.source.mediaElement !== src) {
+          webAudio.source.disconnect();
+        }
+        let updateNodes = webAudio.eqNodes;
+        // If missing, recreate filter chain.
+        if (!updateNodes) {
+          const bass = context.createBiquadFilter();
+          bass.type = "lowshelf";
+          bass.frequency.value = 80;
+          bass.gain.value = eqBands[0];
+    
+          const mid = context.createBiquadFilter();
+          mid.type = "peaking";
+          mid.frequency.value = 1100;
+          mid.Q.value = 1;
+          mid.gain.value = eqBands[1];
+    
+          const treble = context.createBiquadFilter();
+          treble.type = "highshelf";
+          treble.frequency.value = 7200;
+          treble.gain.value = eqBands[2];
+
+          updateNodes = [bass, mid, treble];
+        }
+        const newSource = context.createMediaElementSource(src);
+        newSource.connect(updateNodes[0]);
+        updateNodes[0].connect(updateNodes[1]);
+        updateNodes[1].connect(updateNodes[2]);
+        updateNodes[2].connect(context.destination);
+
+        setWebAudio({
+          ...webAudio,
+          source: newSource,
+          eqNodes: updateNodes
+        });
+
+        cleanup = () => {
+          newSource && newSource.disconnect();
+          updateNodes && updateNodes.forEach(node => node.disconnect());
+        };
+      } catch (e) {} // Safe catch for duplicate nodes.
+    }
+    return cleanup;
+    // eslint-disable-next-line
+  }, [audioRef, currentTrack.src]);
+
+  // Update EQ and filters if eqBands state changes
+  useEffect(() => {
+    if (!webAudio.eqNodes) return;
+    if (webAudio.eqNodes.length === 3) {
+      webAudio.eqNodes[0].gain.value = eqBands[0];
+      webAudio.eqNodes[1].gain.value = eqBands[1];
+      webAudio.eqNodes[2].gain.value = eqBands[2];
+    }
+    // We do not update state on slider move, as that's done in slider itself for perf.
+  }, [eqBands, webAudio.eqNodes]);
 
   // Attempt to get duration for uploaded audio (best effort for local files)
   useEffect(() => {
@@ -310,11 +434,16 @@ function MainContainer() {
   useEffect(() => {
     if (audioRef.current) {
       if (playing) {
+        // Safari requires trigger on audio context resume
+        if (webAudio.context && webAudio.context.state === "suspended") {
+          webAudio.context.resume();
+        }
         audioRef.current.play().catch(() => setPlaying(false));
       } else {
         audioRef.current.pause();
       }
     }
+    // eslint-disable-next-line
   }, [playing, currentIdx]);
 
   useEffect(() => {
@@ -399,6 +528,10 @@ function MainContainer() {
     });
     setCurrentIdx(availableTracks.length + newTracks.length - 1);
   }
+
+  // Toggle EQ Popup
+  const handleShowEq = () => setShowEqPopup(true);
+  const handleHideEq = () => setShowEqPopup(false);
 
   return (
     <div
