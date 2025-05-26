@@ -2,23 +2,17 @@ import React, { useRef, useState, useEffect } from "react";
 
 // PUBLIC_INTERFACE
 /**
- * MelodyMaster MainContainer - A React component styled as an old car stereo.
- * Features: Real Play/Pause, Skip/Prev, Album Art, Current Song Info, Progress Bar, Shuffle, Repeat, EQ, Retro-style.
- * Ensures at least one valid, public MP3 source is always playable (never triggers “no supported sources” error).
+ * MelodyMaster MainContainer - Car Stereo Look
+ * Enhanced: Tracklist with mock album art, wide retro car stereo theme, animated visualizer when playing.
  */
 
-/*
- * --- Sample music files (royalty free and short for demo) ---
- * If you want to use your own audio files:
- *  1. Add mp3/wav files to the project's `public` folder (e.g., public/my_song.mp3)
- *  2. Add local sources here as: src: process.env.PUBLIC_URL + '/my_song.mp3'
- * The code below will auto-detect working sources, and always fallback to a known-good demo track.
+/**
+ * Demo music files and album art.
  */
 const TESTED_MP3 = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 
-// Ensure at least one always-valid public MP3 is present in audioTracks as the default
+// All tracks must have art. Art here uses illustrative mock album covers (unsplash, imgur, placeholder.com)
 const audioTracks = [
-  // Default guaranteed playable track:
   {
     title: "Sample Track (Add your own music!)",
     artist: "MelodyMaster",
@@ -27,13 +21,11 @@ const audioTracks = [
     src: TESTED_MP3,
     duration: 347,
   },
-  // Add your own valid tracks here as needed, e.g.:
-  // { title: "My Local Song", artist: "You", album: "Your Album", art: "local-artwork.png", src: process.env.PUBLIC_URL + '/my_song.mp3', duration: 180 },
   {
     title: "Time Machine Groove",
     artist: "RetroWave",
     album: "Neon Nights",
-    art: "https://i.imgur.com/GVlQINJ.png",
+    art: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=400&q=80",
     src: "https://cdn.pixabay.com/audio/2022/10/16/audio_12c716b9ba.mp3",
     duration: 201,
   },
@@ -41,7 +33,7 @@ const audioTracks = [
     title: "Dashboard Dreams",
     artist: "Synth Escape",
     album: "Cruisin'",
-    art: "https://i.imgur.com/ZA7AKWD.png",
+    art: "https://placehold.co/120x120/orange/FFFFFF.png?text=Synth+Wave",
     src: "https://cdn.pixabay.com/audio/2023/05/30/audio_1418e61dbb.mp3",
     duration: 248,
   },
@@ -55,7 +47,6 @@ const audioTracks = [
   },
 ];
 
-// Fallback single test track in case array gets emptied somehow
 const fallbackTrack = {
   title: "Sample Track (Add your own music!)",
   artist: "MelodyMaster",
@@ -71,6 +62,7 @@ const stereoTheme = {
   accent: "#FFFFFF",
   background: "#282B28",
   digital: "#EFEA91",
+  chrome: "#B4B4B4"
 };
 
 function formatTime(secs) {
@@ -87,11 +79,6 @@ function getNextTrackIdx(idx, dir, length) {
   return next;
 }
 
-/**
- * Checks if the browser can play the track's source (by file extension, basic test).
- * @param {string} src
- * @returns {boolean}
- */
 function canPlayAudioSrc(src) {
   if (!src) return false;
   const testAudio = document.createElement('audio');
@@ -99,44 +86,101 @@ function canPlayAudioSrc(src) {
   if (ext === "mp3") return !!testAudio.canPlayType("audio/mpeg");
   if (ext === "wav") return !!testAudio.canPlayType("audio/wav");
   if (ext === "ogg") return !!testAudio.canPlayType("audio/ogg");
-  // fallback guess for other schemes
+  // fallback guess
   return true;
+}
+
+/**
+ * Simple animated visualizer: 7 bars that animate heights when playing
+ */
+function Visualizer({ active }) {
+  // Array of time-varying values so animation looks dynamic, but random per tick.
+  const [levels, setLevels] = useState([0, 0, 0, 0, 0, 0, 0]);
+  useEffect(() => {
+    let anim;
+    if (active) {
+      anim = setInterval(() => {
+        // Each bar gets a different random height, cycling so it waves
+        setLevels(lvls =>
+          lvls.map((l, idx) =>
+            Math.max(30, Math.floor(25 + 38 * Math.abs(Math.sin(Date.now()/210 + idx*1.8 + Math.random()*0.45))) +
+              Math.floor(Math.random() * 5)
+            )
+          )
+        );
+      }, 125);
+    } else {
+      setLevels([8, 11, 16, 22, 17, 12, 9]);
+    }
+    return () => anim && clearInterval(anim);
+  }, [active]);
+  return (
+    <div className="visualizer-bars">
+      {levels.map((lvl, idx) => (
+        <div
+          key={idx}
+          className="visualizer-bar"
+          style={{
+            height: `${active ? lvl : 10 + (idx * 5)}px`,
+            transition: "height 0.16s cubic-bezier(.48,.39,.1,1.2)",
+            background: active
+              ? `linear-gradient(180deg, #fff, ${stereoTheme.primary} 55%, #095529)`
+              : "linear-gradient(180deg, #b6e9c7, #5de16d 60%, #96bfb1)",
+            opacity: active ? 0.93 : 0.45,
+            filter: active
+              ? "drop-shadow(0 0 4px #1DB95433)"
+              : "blur(1px)",
+          }}
+        />
+      ))}
+      <style>
+        {`
+        .visualizer-bars {
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          height: 52px;
+          width: 133px;
+          margin: 9px auto 0 5px;
+          gap: 7px;
+        }
+        .visualizer-bar {
+          width: 11px;
+          min-width: 8px;
+          border-radius: 4px 4px 2px 2px;
+          background: linear-gradient(180deg, #fff, #1DB954 70%, #095529);
+          box-shadow: 0 4px 7px #171f18aa;
+        }
+        `}
+      </style>
+    </div>
+  );
 }
 
 // PUBLIC_INTERFACE
 function MainContainer() {
-  // Playback state
   const [currentIdx, setCurrentIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [showEQ, setShowEQ] = useState(false);
-  const [audioError, setAudioError] = useState('');
 
+  const [audioError, setAudioError] = useState("");
   const audioRef = useRef(null);
   const progressRef = useRef(null);
 
-  // Check for a supported/working track
+  // Only tracks with supported source, fallback guarantee
   const availableTracks = audioTracks.filter(t => canPlayAudioSrc(t.src));
-
-  // Ensure that at least one track is always provided (fallback if none valid)
   const hasValidTracks = availableTracks.length > 0;
-  const currentTrack =
-    hasValidTracks
-      ? availableTracks[currentIdx % availableTracks.length]
-      : fallbackTrack;
-
-  // If not even the fallback works (very rare, browser issue)
+  const currentTrack = hasValidTracks ? availableTracks[currentIdx % availableTracks.length] : fallbackTrack;
   const cannotPlayAny = !canPlayAudioSrc(currentTrack.src);
 
-  // Enhanced error handler for the audio element
   useEffect(() => {
     if (!audioRef.current) return;
     const handleAudioError = () => {
       setAudioError(
-        "Audio format or source is not supported or not reachable. Please check your internet connection or try a different track. " +
-        "If you're developing, update the audioTracks array in MainContainer.js with valid mp3 or wav sources!"
+        "Audio format/source not supported or not reachable. Try another track or check connection."
       );
       setPlaying(false);
     };
@@ -146,7 +190,6 @@ function MainContainer() {
     };
   }, [currentTrack.src]);
 
-  // Play/Pause logic
   useEffect(() => {
     if (audioRef.current) {
       if (playing) {
@@ -157,7 +200,6 @@ function MainContainer() {
     }
   }, [playing, currentIdx]);
 
-  // Sync progress bar
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -171,17 +213,13 @@ function MainContainer() {
     // eslint-disable-next-line
   }, [currentIdx, repeat, shuffle]);
 
-  // If the user clicks track, start playing
   const handleTrackClick = (idx) => {
     setCurrentIdx(idx);
     setProgress(0);
     setPlaying(true);
   };
-
-  // Play/Pause
   const handlePlayPause = () => setPlaying((p) => !p);
 
-  // Next/Prev logic (with shuffle)
   function getRandomIdx(excl) {
     if (audioTracks.length < 2) return excl;
     let next;
@@ -190,7 +228,6 @@ function MainContainer() {
     } while (next === excl);
     return next;
   }
-
   const handleNext = () => {
     setProgress(0);
     if (shuffle) {
@@ -209,8 +246,6 @@ function MainContainer() {
     }
     setPlaying(true);
   };
-
-  // Progress Bar - Seeking
   const handleBarChange = (e) => {
     const val = Number(e.target.value);
     setProgress(val);
@@ -218,8 +253,6 @@ function MainContainer() {
       audioRef.current.currentTime = val;
     }
   };
-
-  // When audio ends
   function handleTrackEnd() {
     if (repeat) {
       setProgress(0);
@@ -230,8 +263,6 @@ function MainContainer() {
       handleNext();
     }
   }
-
-  // Extra controls for demonstration: EQ and Eject
   const handleEQ = () => setShowEQ((e) => !e);
   const handleEject = () => {
     setPlaying(false);
@@ -239,10 +270,10 @@ function MainContainer() {
     if (audioRef.current) audioRef.current.currentTime = 0;
   };
 
-  // active button highlight
-  const btnActive = (on) => (on ? { filter: `drop-shadow(0 0 6px ${stereoTheme.primary}) brightness(1.3)` } : {});
+  const btnActive = (on) =>
+    on ? { filter: `drop-shadow(0 0 7px ${stereoTheme.primary}) brightness(1.2)` } : {};
 
-  // Render
+  // WIDE Stereo main style: much wider and less tall than before, retro details
   return (
     <div
       style={{
@@ -255,7 +286,7 @@ function MainContainer() {
         fontFamily: "'Orbitron', 'Inter', monospace",
       }}
     >
-      {!hasValidTracks || cannotPlayAny ? (
+      {( !hasValidTracks || cannotPlayAny ) && (
         <div style={{
           color: "#ff5252",
           background: "#210f0fcd",
@@ -274,45 +305,57 @@ function MainContainer() {
               <span>{audioError}</span>
             ) : (
               <span>
-                <b>How to fix:</b> Add one or more working music files (mp3, wav, etc) to the <code>audioTracks</code> array<br />
-                in <code>MainContainer.js</code>. Example fallback used:<br />
+                <b>How to fix:</b> Add one or more working music files with <b>art</b> (mp3, wav, etc) to the <code>audioTracks</code> array<br />
+                in <code>MainContainer.js</code>. Example fallback used:
                 <code>{TESTED_MP3}</code>
                 <br /><br />
-                Or, check your internet connection/network. <br /><br />
-                <b>Developer note:</b> The player will automatically use a tested MP3 if none of your tracks are playable.
+                Or check your internet connection/network.<br /><br />
+                <b>Developer note:</b> The player always falls back to a tested MP3 if none of your tracks are playable.
               </span>
             )}
           </div>
         </div>
-      ) : null}
-      <div className="car-stereo-shell" style={(!hasValidTracks || cannotPlayAny) ? { opacity: 0.45, pointerEvents: 'none' } : {}}>
-        <div className="stereo-header">
-          <div className="stereo-dial"></div>
-          <div className="stereo-brand">MelodyMaster</div>
-          <div className="stereo-lights">
-            <span className={`stereo-light ${playing ? "on" : ""}`}></span>
-            <span className={`stereo-light ${playing ? "on" : ""}`}></span>
+      )}
+
+      <div className="wide-stereo-shell" style={(!hasValidTracks || cannotPlayAny) ? { opacity: 0.45, pointerEvents: 'none' } : {}}>
+        {/* Chrome and retro corner screws */}
+        <div className="chrome-decoration">
+          <span className="chrome-screw chrome-screw-1"></span>
+          <span className="chrome-screw chrome-screw-2"></span>
+          <span className="chrome-screw chrome-screw-3"></span>
+          <span className="chrome-screw chrome-screw-4"></span>
+        </div>
+        {/* Top info bar: Brand + Lights */}
+        <div className="stereo-header-wide">
+          <div className="stereo-brand-wide">MelodyMaster</div>
+          <div className="stereo-lights-wide">
+            <span className={`stereo-light-wide ${playing ? "on" : ""}`}></span>
+            <span className={`stereo-light-wide ${playing ? "on" : ""}`}></span>
           </div>
         </div>
 
-        <div className="stereo-center">
-          <div className="stereo-artwork">
-            <img src={currentTrack.art} alt="Album Art" />
-            <div className={playing ? "spinning-vinyl vinyl-on" : "spinning-vinyl"}></div>
+        <div className="stereo-flex">
+          {/* Current Album Art Area */}
+          <div className="current-albumart-wrap">
+            <div className="current-albumart-glow" />
+            <img
+              src={currentTrack.art}
+              alt="Album Art"
+              className={`album-art-img ${playing ? "playing" : ""}`}
+            />
+            <div className={playing ? "spinning-vinyl vinyl-on" : "spinning-vinyl"} />
           </div>
-          <div className="stereo-display">
-            <div className="digital-display retro-screen">
+          {/* Center block: digital, controls, visualizer */}
+          <div className="stereo-mainstack">
+            <div className="digital-display-wide retro-screen-wide">
               <span className="display-track">{currentTrack.title}</span>
               <span className="display-artist">{currentTrack.artist}</span>
               <span className="display-album">{currentTrack.album}</span>
+              <span className="display-duration">
+                ⏱️ {formatTime(progress)} / {formatTime(currentTrack.duration)}
+              </span>
             </div>
-            <div className="display-duration">
-              <span role="img" aria-label="timer" style={{ filter: "drop-shadow(1px 1px 0 #444)" }}>
-                ⏱️
-              </span>{" "}
-              {formatTime(progress)} / {formatTime(currentTrack.duration)}
-            </div>
-            <div className="progress-bar-row" style={{ width: "86%", margin: "0.75em 0 0.25em 0" }}>
+            <div className="progress-bar-row-wide">
               <input
                 type="range"
                 min="0"
@@ -330,9 +373,103 @@ function MainContainer() {
                 aria-label="Seek position"
               />
             </div>
+            {/* --- Animated visualizer below controls --- */}
+            <Visualizer active={playing} />
+            {/* Controls */}
+            <div className="stereo-controls-wide">
+              <button className="control-btn-wide btn-prev" onClick={handlePrev} aria-label="Previous track">
+                <span className="btn-knob-wide">&#9198;</span>
+              </button>
+              <button className="control-btn-wide btn-playpause" onClick={handlePlayPause} aria-label={playing ? "Pause" : "Play"}>
+                <span className="btn-knob-wide">
+                  {playing ? <span>&#10073;&#10073;</span> : <span>&#9654;</span>}
+                </span>
+              </button>
+              <button className="control-btn-wide btn-next" onClick={handleNext} aria-label="Next track">
+                <span className="btn-knob-wide">&#9197;</span>
+              </button>
+              <button className="control-btn-wide btn-shuffle" aria-label="Shuffle"
+                style={btnActive(shuffle)} onClick={() => setShuffle((s) => !s)}>
+                <span className="btn-knob-wide">&#128256;</span>
+              </button>
+              <button className="control-btn-wide btn-repeat" aria-label="Repeat"
+                style={btnActive(repeat)} onClick={() => setRepeat((r) => !r)}>
+                <span className="btn-knob-wide">&#128257;</span>
+              </button>
+              <button className="control-btn-wide btn-eject" aria-label="Eject"
+                onClick={handleEject}>
+                <span className="btn-knob-wide">&#9167;</span>
+              </button>
+              <button className="control-btn-wide btn-eq" aria-label="Equalizer"
+                style={btnActive(showEQ)} onClick={handleEQ}>
+                <span className="btn-knob-wide">&#119070;</span>
+              </button>
+            </div>
+            {showEQ && (
+              <div className="eq-popup-wide">
+                <div style={{ fontFamily: "Orbitron", fontWeight: 900, fontSize: "1.1em", letterSpacing: 2, color: "#c6ffcd" }}>
+                  EQ Settings
+                </div>
+                <div style={{ marginTop: 11, color: "#b2e38f", fontFamily: "inherit", letterSpacing: "1.3px", fontSize: "0.98em" }}>
+                  Bass: <span style={{ color: "#fff", fontWeight: 600 }}>+2</span>
+                  <br />
+                  Treble: <span style={{ color: "#fff", fontWeight: 600 }}>-1</span>
+                  <br />
+                  Loudness: <span style={{ color: "#fff", fontWeight: 600 }}>ON</span>
+                  <div style={{ marginTop: 7, color: "#aee", fontFamily: "monospace", fontSize: "0.91em" }}>Vintage simulated</div>
+                </div>
+                <button
+                  onClick={() => setShowEQ(false)}
+                  style={{
+                    marginTop: 13,
+                    background: "#1DB954",
+                    color: "#191414",
+                    border: "none",
+                    borderRadius: 7,
+                    fontWeight: 600,
+                    padding: "4.2px 13px",
+                    fontFamily: "Orbitron, monospace",
+                    cursor: "pointer",
+                    fontSize: "0.98em",
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+          {/* Track List: thumb+meta */}
+          <div className="tracklist-stack">
+            <div className="tracklist-label-wide">TRACKLIST</div>
+            <ul className="tracklist-ul-wide">
+              {(hasValidTracks ? availableTracks : [fallbackTrack]).map((track, idx) => (
+                <li
+                  key={track.title}
+                  className={idx === currentIdx ? "selected-wide" : ""}
+                  onClick={() => handleTrackClick(idx)}
+                  style={idx === currentIdx ? { fontWeight: 700, textShadow: "0 0 6px #1DB95490" } : undefined}
+                >
+                  <img
+                    src={track.art}
+                    alt="track art"
+                    className="tracklist-thumb"
+                    style={{
+                      border: idx === currentIdx ? `2.5px solid ${stereoTheme.primary}` : "2px solid #313",
+                      boxShadow: idx === currentIdx ? "0 1px 9px #4fdc7e44" : "0px 1px 3.5px #2229"
+                    }}
+                  />
+                  <div className="track-meta">
+                    <div className="track-title">{track.title}</div>
+                    <div className="track-artist">{track.artist}</div>
+                  </div>
+                  <span className="tracklist-dur">{formatTime(track.duration)}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
+        {/* Hidden audio element */}
         <audio
           ref={audioRef}
           src={currentTrack && currentTrack.src ? currentTrack.src : ""}
@@ -340,418 +477,379 @@ function MainContainer() {
           style={{ display: "none" }}
           tabIndex={-1}
         />
-
-        <div className="stereo-controls plus-extra-controls">
-          <button className="control-btn btn-prev" onClick={handlePrev} aria-label="Previous track">
-            <span className="btn-knob">&#9198;</span>
-          </button>
-          <button className="control-btn btn-playpause" onClick={handlePlayPause} aria-label={playing ? "Pause" : "Play"}>
-            <span className="btn-knob">
-              {playing ? (
-                <span>&#10073;&#10073;</span>
-              ) : (
-                <span>&#9654;</span>
-              )}
-            </span>
-          </button>
-          <button className="control-btn btn-next" onClick={handleNext} aria-label="Next track">
-            <span className="btn-knob">&#9197;</span>
-          </button>
-          <button
-            className="control-btn btn-shuffle"
-            aria-label="Shuffle"
-            style={btnActive(shuffle)}
-            onClick={() => setShuffle((s) => !s)}
-          >
-            <span className="btn-knob">&#128256;</span>
-            {/* Unicode: 🔀 */}
-          </button>
-          <button
-            className="control-btn btn-repeat"
-            aria-label="Repeat"
-            style={btnActive(repeat)}
-            onClick={() => setRepeat((r) => !r)}
-          >
-            <span className="btn-knob">&#128257;</span>
-            {/* Unicode: 🔁 */}
-          </button>
-          <button
-            className="control-btn btn-eject"
-            aria-label="Eject"
-            style={btnActive(false)}
-            onClick={handleEject}
-          >
-            <span className="btn-knob">&#9167;</span>
-            {/* Unicode: ⏏️ */}
-          </button>
-          <button
-            className="control-btn btn-eq"
-            aria-label="Equalizer"
-            style={btnActive(showEQ)}
-            onClick={handleEQ}
-          >
-            <span className="btn-knob">&#119070;</span>
-            {/* Unicode: 𝅗𝅥 (musical symbol as faux EQ toggle) */}
-          </button>
-        </div>
-
-        <div className="stereo-tracklist">
-          <div className="tracklist-label">TRACKLIST</div>
-          <ul>
-            {(hasValidTracks ? availableTracks : [fallbackTrack]).map((track, idx) => (
-              <li
-                key={track.title}
-                className={idx === currentIdx ? "selected" : ""}
-                onClick={() => handleTrackClick(idx)}
-                style={idx === currentIdx ? { fontWeight: 700, textShadow: "0 0 7px #1DB95450" } : undefined}
-              >
-                <span className="track-title">{track.title}</span>
-                <span className="track-artist">{track.artist}</span>
-                <span className="track-duration">{formatTime(track.duration)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {showEQ && (
-          <div
-            className="eq-popup"
-            style={{
-              color: stereoTheme.primary,
-              background: "#101310f7",
-              border: `2.5px solid #4f6c47`,
-              borderRadius: 12,
-              position: "absolute",
-              right: "7px",
-              bottom: "92px",
-              fontSize: "1rem",
-              padding: "16px 14px 11px 14px",
-              boxShadow: "0 1.5px 12px #060c",
-              zIndex: 10,
-              width: "160px",
-            }}
-          >
-            <div style={{ fontFamily: "Orbitron", fontWeight: 900, fontSize: "1.1em", letterSpacing: 2, color: "#c6ffcd" }}>
-              EQ Settings
-            </div>
-            <div style={{ marginTop: 11, color: "#b2e38f", fontFamily: "inherit", letterSpacing: "1.3px", fontSize: "0.98em" }}>
-              Bass: <span style={{ color: "#fff", fontWeight: 600 }}>+2</span>
-              <br />
-              Treble: <span style={{ color: "#fff", fontWeight: 600 }}>-1</span>
-              <br />
-              Loudness: <span style={{ color: "#fff", fontWeight: 600 }}>ON</span>
-              <div style={{ marginTop: 7, color: "#aee", fontFamily: "monospace", fontSize: "0.91em" }}>Vintage simulated</div>
-            </div>
-            <button
-              onClick={() => setShowEQ(false)}
-              style={{
-                marginTop: 13,
-                background: "#1DB954",
-                color: "#191414",
-                border: "none",
-                borderRadius: 7,
-                fontWeight: 600,
-                padding: "4.2px 13px",
-                fontFamily: "Orbitron, monospace",
-                cursor: "pointer",
-                fontSize: "0.98em",
-              }}
-            >
-              Close
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Inline style for retro font import */}
+      {/* Fonts and main styles */}
       <style>
         {`@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');`}
       </style>
-      {/* Retro Car Stereo Styles */}
       <style>
         {`
-        .progress-bar-row {
-          display: flex;
-          align-items: center;
-          margin: 7px 0 0 0;
-        }
-        .progressbar[type="range"]::-webkit-slider-thumb {
-          background: ${stereoTheme.primary};
-        }
-        .progressbar {
-          margin-top: 1px;
-        }
-        /* Extra stereo controls */
-        .plus-extra-controls {
-          flex-wrap: wrap;
-          gap: 18px !important;
-          justify-content: flex-start;
-          min-width: 200px;
-        }
-        .btn-shuffle, .btn-repeat, .btn-eject, .btn-eq {
-          font-size: 1.16rem;
-          color: #b0d2ad;
-          border: 3px solid #267643;
-          background: radial-gradient(circle, #071808 60%, #1DB95422 100%);
-          box-shadow: 0 1px 8px #13240e;
-          width: 43px; height: 43px;
-          margin-left: 5px;
-          margin-right: 0px;
-        }
-        .btn-shuffle:active,
-        .btn-repeat:active,
-        .btn-eject:active,
-        .btn-eq:active {
-          color: ${stereoTheme.primary};
-          background: #11471d44;
-          border-color: ${stereoTheme.primary};
-        }
-        .eq-popup {
-          animation: popfade .42s cubic-bezier(.46,-0.38,.68,1.6);
-        }
-        @keyframes popfade {
-          from { opacity: 0; transform: scale(.72) translateY(30px);}
-          to { opacity: 1; transform: scale(1) translateY(0);}
-        }
+          /* Wide car stereo look */
+          .wide-stereo-shell {
+            background: linear-gradient(150deg, #262629 50%, #1b1d18 100%);
+            border-radius: 38px;
+            box-shadow:
+              0 9px 75px #171c2c88,
+              0 0 0 13px #242425,
+              0 0 0 21px #65666888,
+              0 0 0 30px #191b1992 inset;
+            border: 6px solid #111;
+            min-width: 612px;
+            max-width: 860px;
+            min-height: 282px;
+            margin: 54px 0 40px 0;
+            padding: 26px 38px 30px 38px;
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .chrome-decoration {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 5;
+            pointer-events: none;
+          }
+          .chrome-screw {
+            position: absolute;
+            width: 16px; height: 16px;
+            background: radial-gradient(circle, #d5d8d7 60%, #595d69 100%);
+            border-radius: 100%;
+            box-shadow: 0 1.5px 7px #b4b4b465, 0 0.5px 1.5px #2228;
+            border: 1.5px solid #a7b5b8;
+            z-index: 9;
+          }
+          .chrome-screw-1 { left: 11px; top: 9px;}
+          .chrome-screw-2 { right: 11px; top: 9px;}
+          .chrome-screw-3 { left: 11px; bottom: 15px;}
+          .chrome-screw-4 { right: 11px; bottom: 15px;}
+          .stereo-header-wide {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 15px;
+            margin-left: 14px;
+            margin-right: 14px;
+          }
+          .stereo-brand-wide {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 2.2rem;
+            color: ${stereoTheme.primary};
+            letter-spacing: 0.13em;
+            text-shadow: 0px 2px 10px #000, 0 0 13px ${stereoTheme.primary}77;
+            filter: brightness(1.22) drop-shadow(0 0 1.5px #fff6);
+          }
+          .stereo-lights-wide {
+            display: flex; gap:8px;
+          }
+          .stereo-light-wide {
+            display: inline-block;
+            width: 15px; height: 15px;
+            border-radius: 50%;
+            background: #393e39;
+            border: 2.5px solid #181b12;
+            box-shadow: 0 1px 3px #000a;
+            transition: background 120ms;
+          }
+          .stereo-light-wide.on {
+            background: ${stereoTheme.primary};
+            box-shadow: 0 0 12px ${stereoTheme.primary}, 0 1px 3px #000;
+          }
+          .stereo-flex {
+            display: flex;
+            flex-direction: row;
+            gap: 36px;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+          }
+          .current-albumart-wrap {
+            margin-top: 2px;
+            width: 137px;
+            height: 137px;
+            border-radius: 17px;
+            border: 4px solid #393e35;
+            background: linear-gradient(120deg, #112, #242727 99%);
+            box-shadow: 0 2px 22px #71985e26, 0 0.5px 6.5px #282a269b;
+            position: relative;
+            z-index: 2;
+            display: flex; align-items: center; justify-content: center;
+            overflow: visible;
+          }
+          .current-albumart-glow {
+            position: absolute; z-index: 2;
+            top: 5px; left: 10px; right: 10px; bottom: 5px;
+            border-radius: 13px;
+            box-shadow: 0 0 38px 17px #60da8a39, 0 0 15px 4px #0008;
+            pointer-events: none;
+            background: transparent;
+            opacity: 0.34;
+          }
+          .album-art-img {
+            width: 116px; height: 116px;
+            object-fit: cover;
+            border-radius: 13px;
+            position: relative;
+            box-shadow: 0 3px 18px #132b17a5, 0 0.5px 2.9px #334833;
+            border: 1.5px solid #a1a7a7;
+            z-index: 5;
+            will-change: filter, transform;
+            transition: filter .45s, box-shadow .45s, border-color .22s;
+          }
+          .album-art-img.playing {
+            filter: brightness(1.13) drop-shadow(0 0 14px #4bac6c25);
+            border-color: ${stereoTheme.primary};
+            box-shadow: 0 7px 38px #1DB95444;
+          }
+          .spinning-vinyl {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: 116px; height: 116px;
+            transform: translate(-50%, -50%);
+            border-radius: 100%;
+            box-shadow: 0 0 13px #146A4C55 inset, 0 0 22px #000 inset;
+            border: 3px dashed #eee4;
+            pointer-events: none;
+            opacity: 0.15;
+            z-index: 4;
+            transition: opacity 0.6s;
+            mix-blend-mode: multiply;
+          }
+          .spinning-vinyl.vinyl-on {
+            opacity: 0.26;
+            animation: spinning 2.2s linear infinite;
+          }
 
-        /* Original stereo CSS preserved below */
-        .car-stereo-shell {
-          background: linear-gradient(160deg, #222 60%, #444 100%);
-          border-radius: 28px;
-          box-shadow: 0 4px 44px #111c, 0 0px 0 7px #090909 inset;
-          border: 4px solid #111;
-          min-width: 375px;
-          max-width: 410px;
-          margin: 36px 0 26px 0;
-          padding: 24px 16px 24px 16px;
-          position: relative;
-        }
-        .stereo-header {
-          display: flex; align-items: center; justify-content: space-between;
-          margin-bottom: 16px;
-        }
-        .stereo-brand {
-          font-family: 'Orbitron', monospace;
-          font-weight: 700;
-          font-size: 1.6rem;
-          color: ${stereoTheme.primary};
-          letter-spacing: 0.095em;
-          text-shadow: 0px 1px 2px #000, 0px 0px 10px ${stereoTheme.primary}44;
-        }
-        .stereo-dial {
-          width: 22px; height: 22px; background: #222;
-          border-radius: 50%; box-shadow: 2px 2px 6px #0e0e0e;
-          border: 2px solid #686868;
-        }
-        .stereo-lights { display: flex; gap:5px;}
-        .stereo-light {
-          display: inline-block;
-          width: 10px; height: 10px;
-          border-radius: 50%;
-          background: #333;
-          border: 1.5px solid #111;
-          box-shadow: 0px 1px 2px #000;
-        }
-        .stereo-light.on {
-          background: ${stereoTheme.primary};
-          box-shadow: 0 0 10px ${stereoTheme.primary}, 0 1px 2px #000;
-        }
+          .stereo-mainstack {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            flex: 3 3 295px;
+            min-width: 240px;
+            margin-top: 7px;
+          }
+          .digital-display-wide {
+            background: repeating-linear-gradient(135deg, #275c27, #122212 4px, #274327 8px, #2d4627 13px);
+            color: ${stereoTheme.digital};
+            border-radius: 10px;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.09rem;
+            font-weight: bold;
+            padding: 15px 17px;
+            min-width: 173px;
+            margin-bottom: 8px;
+            box-shadow: 0 1.5px 10px #000c;
+            border: 2px solid #3ca671;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5px;
+            letter-spacing: 0.045em;
+          }
+          .retro-screen-wide span {
+            display: block;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+          }
+          .display-track {
+            font-size: 1.15rem;
+            color: ${stereoTheme.primary};
+          }
+          .display-artist {
+            font-size: 1.03rem;
+            font-weight: 400;
+            color: #eee;
+          }
+          .display-album {
+            font-size: 0.98rem; color: #ecec86;
+            font-style: italic;
+          }
+          .display-duration {
+            margin-left: 2.8px;
+            margin-top: 5px;
+            color: ${stereoTheme.digital};
+            font-size: 1.01rem;
+            letter-spacing: 0.045em;
+          }
 
-        .stereo-center {
-          display: flex; gap: 18px;
-          justify-content: center; align-items: center;
-          margin-bottom: 8px;
-        }
-        .stereo-artwork {
-          width: 92px; height: 92px;
-          border-radius: 11px;
-          overflow: hidden;
-          border: 2.5px solid ${stereoTheme.primary};
-          background: #181818;
-          display: flex; align-items: center; justify-content: center;
-          position: relative;
-        }
-        .stereo-artwork img {
-          width: 100%; height: 100%; object-fit: cover;
-          display: block;
-          z-index: 1;
-        }
-        .spinning-vinyl {
-          position: absolute;
-          left: 50%; top: 50%;
-          width: 92px; height: 92px;
-          transform: translate(-50%, -50%);
-          border-radius: 100%;
-          box-shadow: 0 0 10px #1db95444 inset, 0 0 24px #000 inset;
-          border: 3px dashed #bbb2;
-          pointer-events: none;
-          mix-blend-mode: color-dodge;
-          opacity: 0.23;
-          transition: opacity 0.7s;
-        }
-        .spinning-vinyl.vinyl-on {
-          opacity: 0.50;
-          animation: spinning 2.3s linear infinite;
-        }
-        @keyframes spinning {
-          to { transform: translate(-50%, -50%) rotate(360deg);}
-        }
-        .stereo-display {
-          flex: 1 1 180px;
-          min-width: 164px;
-          display: flex; flex-direction: column; align-items: flex-start;
-        }
-        .digital-display {
-          background: repeating-linear-gradient(
-            135deg,
-            #353822,
-            #2a2912 3px,
-            #353822 6px,
-            #36351f 9px
-          );
-          color: ${stereoTheme.digital};
-          border-radius: 7px;
-          font-family: 'Orbitron', monospace;
-          font-size: 1.03rem;
-          font-weight: bold;
-          padding: 13px 14px;
-          width: 100%;
-          margin-bottom: 4px;
-          box-shadow: 0 1px 7px #000a;
-          border: 1px solid #393723;
-          text-align: left;
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-          letter-spacing: 0.04em;
-        }
-        .retro-screen span {
-          display: block;
-          overflow: hidden;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-        }
-        .display-track {
-          font-size: 1.05rem; color: ${stereoTheme.primary};
-        }
-        .display-artist {
-          font-size: 0.98rem; font-weight: 400; color: #eee;
-        }
-        .display-album {
-          font-size: 0.92rem; color: #b9da7d;
-          font-style: italic;
-        }
-        .display-duration {
-          margin-left: 5px;
-          margin-top: 2px;
-          color: ${stereoTheme.digital};
-          font-size: 0.99rem;
-          letter-spacing: 0.035em;
-          font-family: 'Orbitron', monospace;
-        }
+          .progress-bar-row-wide {
+            width: 100%;
+            margin: 1.2em 0 0.33em 0.2em;
+            display: flex;
+            align-items: center;
+          }
 
-        .stereo-tracklist {
-          margin: 16px auto 10px auto;
-          background: linear-gradient(90deg, #191919 60%, #323332 100%);
-          border-radius: 8px;
-          padding: 8px 13px 6px 13px;
-          min-width: 260px;
-          border: 1.5px solid #232323;
-          box-shadow: 0 0.5px 2.5px #111a inset;
-        }
-        .tracklist-label {
-          font-size: 0.90rem;
-          letter-spacing: 0.13em;
-          font-weight: 600;
-          color: ${stereoTheme.primary};
-          margin-bottom: 6px;
-        }
-        .stereo-tracklist ul {
-          list-style: none;
-          margin: 0; padding: 0;
-        }
-        .stereo-tracklist li {
-          display: flex; justify-content: space-between; align-items: center;
-          color: ${stereoTheme.accent};
-          padding: 5px 0;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: background 0.13s;
-          font-size: 1.01rem;
-        }
-        .stereo-tracklist li.selected {
-          background: ${stereoTheme.primary}22;
-          color: ${stereoTheme.primary};
-          font-weight: 700;
-        }
-        .stereo-tracklist li:hover:not(.selected) {
-          background: #272727;
-        }
-        .track-title {
-          flex: 2 2 130px;
-        }
-        .track-artist {
-          flex: 1 1 60px; font-size: 0.91rem; color: #b7f39d
-        }
-        .track-duration {
-          min-width: 44px;
-          text-align: right;
-          color: #cfcdb2;
-          font-size: 0.92rem;
-        }
+          /* Controls - wide, chrome effect */
+          .stereo-controls-wide {
+            margin-top: 11px;
+            padding: 11px 25px 8px 25px;
+            background: linear-gradient(90deg, #363636 65%, #212c26 120%);
+            border-radius: 18px 18px 30px 30px;
+            border: 3px solid #353822;
+            display: flex;
+            align-items: center;
+            gap: 26px;
+            min-width: 294px;
+            max-width: 360px;
+            box-shadow: 0 1.7px 20px #0008 inset, 0 1.3px 14px #2227;
+          }
+          .control-btn-wide {
+            background: radial-gradient(circle, #272827 55%, #3a3a40 100%);
+            border: 3.5px solid #aaa8a8;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            box-shadow: 0 1.3px 6.7px #3333;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            margin: 0;
+            transition: box-shadow 0.14s, background 0.14s, border 0.14s;
+            font-size: 1.29rem;
+            color: ${stereoTheme.digital};
+            position: relative;
+          }
+          .control-btn-wide:active {
+            box-shadow: 0 1px 13px #1db95444 inset;
+            background: ${stereoTheme.primary}22;
+            color: ${stereoTheme.primary};
+            border-color: ${stereoTheme.primary};
+          }
+          .btn-knob-wide {
+            font-size: 1.23em;
+            filter: drop-shadow(1px 2px 0 #fff1);
+            padding-bottom: 3px;
+          }
+          .btn-playpause {
+            border: 3.5px solid ${stereoTheme.primary};
+            color: ${stereoTheme.primary};
+            background: radial-gradient(circle, #232723 55%, ${stereoTheme.primary}20 100%);
+            width: 61px; height: 61px;
+          }
 
-        .stereo-controls {
-          margin: 0 auto;
-          margin-top: 18px;
-          padding: 9px 25px 8px 25px;
-          background: linear-gradient(90deg, #141414 60%, #28332e 120%);
-          border-radius: 14px 14px 26px 26px;
-          border: 2px solid #353822;
-          min-width: 180px;
-          max-width: 265px;
-          display: flex; justify-content: center; gap: 32px;
-          box-shadow: 0 1.7px 20px #0007 inset;
-        }
-        .control-btn {
-          background: radial-gradient(circle, #272827 60%, ${stereoTheme.primary}15 100%);
-          border: 4px solid #686868;
-          width: 54px; height: 54px;
-          border-radius: 50%;
-          box-shadow: 0 2px 8px #181818;
-          display: flex; align-items: center; justify-content: center;
-          cursor: pointer;
-          margin: 0;
-          transition: box-shadow 0.16s, background 0.16s;
-          font-size: 1.63rem;
-          color: ${stereoTheme.digital};
-          position: relative;
-        }
-        .control-btn:active {
-          box-shadow: 0 1px 12px #1db95444 inset;
-          background: ${stereoTheme.primary}22;
-          color: ${stereoTheme.primary};
-        }
-        .btn-knob {
-          font-size: 1.3em;
-          filter: drop-shadow(1px 2px 0 #fff1);
-          padding-bottom: 3px;
-        }
-        .btn-playpause {
-          border: 4px solid ${stereoTheme.primary};
-          color: ${stereoTheme.primary};
-          background: radial-gradient(circle, #232723 50%, ${stereoTheme.primary}25 100%);
-          width: 62px; height: 62px;
-        }
-        .btn-playpause:active {
-          filter: brightness(1.22);
-        }
+          /* Visualizer is styled inline in Visualizer component */
 
-        /* Responsive adjustments for narrow screens */
-        @media (max-width: 500px) {
-          .car-stereo-shell { min-width: 98vw; max-width: 99vw; padding: 7vw 2vw; border-radius: 7vw; }
-          .stereo-center { flex-direction: column; gap:5vw; align-items: stretch;}
-          .stereo-tracklist { min-width: 70vw; }
-        }
+          /* Tracklist wide */
+          .tracklist-stack {
+            flex: 1 1 194px;
+            min-width: 178px;
+            max-width: 233px;
+            margin-left: 6px;
+            margin-top: 1px;
+            background: linear-gradient(99deg, #171c19 65%, #262828 100%);
+            border-radius: 15px;
+            border: 2.5px solid #393822;
+            box-shadow: 0 1.5px 11px #212a1a42;
+            padding: 11px 7px 11px 7px;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+          }
+          .tracklist-label-wide {
+            font-size: 0.93rem;
+            letter-spacing: 0.11em;
+            font-weight: 650;
+            color: ${stereoTheme.primary};
+            margin-bottom: 11px;
+            margin-left: 5px;
+          }
+          .tracklist-ul-wide {
+            list-style: none;
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; gap: 1.5px;
+            width: 99%;
+          }
+          .tracklist-ul-wide li {
+            display: flex;
+            align-items: center;
+            min-height: 45px;
+            gap: 8px;
+            color: ${stereoTheme.accent};
+            padding: 5.5px 0 5.5px 5px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 1.02rem;
+            transition: background 0.13s, color 0.11s;
+            border: 1.6px solid transparent;
+            position: relative;
+          }
+          .tracklist-ul-wide li.selected-wide {
+            background: ${stereoTheme.primary}22;
+            color: ${stereoTheme.primary};
+            font-weight: 700;
+            border: 1.6px solid ${stereoTheme.primary};
+          }
+          .tracklist-ul-wide li:hover:not(.selected-wide) {
+            background: #181f18;
+          }
+          .tracklist-thumb {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-right: 6px;
+            margin-left: 2px;
+            background: #2d2f34;
+            box-shadow: 0 1px 7px #2adba633;
+          }
+          .track-meta {
+            flex: 3 3 120px;
+            line-height: 1.19;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5px;
+          }
+          .track-title {
+            font-size: 1.01rem;
+            font-weight: 680;
+            color: #fff;
+          }
+          .selected-wide .track-title { color: ${stereoTheme.primary}; }
+          .track-artist {
+            font-size: 0.89rem;
+            color: #b7f39d;
+            font-weight: 500;
+          }
+          .tracklist-dur {
+            min-width: 42px;
+            text-align: right;
+            font-size: 0.89rem;
+            margin-left: auto;
+            color: #c4eacf;
+            font-family: 'Orbitron', monospace;
+          }
+          /* EQ Popup */
+          .eq-popup-wide {
+            color: ${stereoTheme.primary};
+            background: #101310f7;
+            border: 2.5px solid #4f6c47;
+            border-radius: 12px;
+            position: absolute;
+            right: 43px;
+            bottom: 64px;
+            font-size: 1rem;
+            padding: 16px 14px 11px 14px;
+            box-shadow: 0 1.5px 17px #060c;
+            z-index: 10;
+            width: 174px;
+            animation: popfade .42s cubic-bezier(.46,-0.38,.68,1.6);
+          }
+          @keyframes popfade {
+            from { opacity: 0; transform: scale(.85) translateY(34px);}
+            to { opacity: 1; transform: scale(1) translateY(0);}
+          }
+          @keyframes spinning {
+            to { transform: translate(-50%, -50%) rotate(360deg);}
+          }
+          /* Responsive: narrower but still wide feeling on phones */
+          @media (max-width: 870px) {
+            .wide-stereo-shell { min-width: 97vw; max-width: 99vw; padding: 3.3vw 0.5vw 7vw 2.4vw; border-radius: 8vw;}
+            .stereo-flex { flex-direction: column; align-items: stretch; gap:3vw;}
+            .current-albumart-wrap { width: 90vw; height: 37vw; max-width: 340px; max-height: 155px;}
+            .album-art-img, .spinning-vinyl { width: 85vw; height: 85vw; max-width: 98px; max-height: 98px; }
+            .tracklist-stack { min-width: 70vw; margin: 2vw !important;}
+            .stereo-mainstack { min-width: unset;}
+            .eq-popup-wide { right: 19vw; }
+          }
         `}
       </style>
     </div>
