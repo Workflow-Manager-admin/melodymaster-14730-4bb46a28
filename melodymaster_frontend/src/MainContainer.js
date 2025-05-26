@@ -217,30 +217,15 @@ function MainContainer() {
   };
   const handlePlayPause = () => setPlaying((p) => !p);
 
-  function getRandomIdx(excl) {
-    if (audioTracks.length < 2) return excl;
-    let next;
-    do {
-      next = Math.floor(Math.random() * audioTracks.length);
-    } while (next === excl);
-    return next;
-  }
+  // Only next/prev/play logic remains; shuffle/repeat/eq/eject functionality is removed.
   const handleNext = () => {
     setProgress(0);
-    if (shuffle) {
-      setCurrentIdx((idx) => getRandomIdx(idx));
-    } else {
-      setCurrentIdx((idx) => getNextTrackIdx(idx, 1, audioTracks.length));
-    }
+    setCurrentIdx((idx) => getNextTrackIdx(idx, 1, audioTracks.length));
     setPlaying(true);
   };
   const handlePrev = () => {
     setProgress(0);
-    if (shuffle) {
-      setCurrentIdx((idx) => getRandomIdx(idx));
-    } else {
-      setCurrentIdx((idx) => getNextTrackIdx(idx, -1, audioTracks.length));
-    }
+    setCurrentIdx((idx) => getNextTrackIdx(idx, -1, audioTracks.length));
     setPlaying(true);
   };
   const handleBarChange = (e) => {
@@ -251,24 +236,8 @@ function MainContainer() {
     }
   };
   function handleTrackEnd() {
-    if (repeat) {
-      setProgress(0);
-      if (audioRef.current) audioRef.current.currentTime = 0;
-      setPlaying(true);
-      audioRef.current?.play();
-    } else {
-      handleNext();
-    }
+    handleNext();
   }
-  const handleEQ = () => setShowEQ((e) => !e);
-  const handleEject = () => {
-    setPlaying(false);
-    setProgress(0);
-    if (audioRef.current) audioRef.current.currentTime = 0;
-  };
-
-  const btnActive = (on) =>
-    on ? { filter: `drop-shadow(0 0 7px ${stereoTheme.primary}) brightness(1.2)` } : {};
 
   // WIDE Stereo main style: much wider and less tall than before, retro details
   return (
