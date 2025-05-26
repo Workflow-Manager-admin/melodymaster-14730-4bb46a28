@@ -6,17 +6,32 @@ import React, { useRef, useState, useEffect } from "react";
  * Features: Real Play/Pause, Skip/Prev, Album Art, Current Song Info, Progress Bar, Shuffle, Repeat, EQ, Retro-style.
  */
 
-// --- Sample music files (royalty free and short for demo) ---
-// For local demo, using open-access mp3 files. You can replace src with own files if needed.
+/*
+ * --- Sample music files (royalty free and short for demo) ---
+ * If you want to use your own audio files:
+ *  1. Add mp3/wav files to the project's `public` folder (e.g., public/my_song.mp3)
+ *  2. Add local sources here as: src: process.env.PUBLIC_URL + '/my_song.mp3'
+ * The code below will auto-detect working sources, and always fallback to a known-good demo track.
+ */
+const TESTED_MP3 = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+
 const audioTracks = [
-  // Keep only tracks with valid src (supported formats: mp3, wav, ogg, etc.)
+  // Add your own valid tracks here as needed, e.g.:
+  // {
+  //   title: "My Local Song",
+  //   artist: "You",
+  //   album: "Your Album",
+  //   art: "local-artwork.png",
+  //   src: process.env.PUBLIC_URL + '/my_song.mp3',
+  //   duration: 180,
+  // },
   {
     title: "Time Machine Groove",
     artist: "RetroWave",
     album: "Neon Nights",
     art: "https://i.imgur.com/GVlQINJ.png",
     src: "https://cdn.pixabay.com/audio/2022/10/16/audio_12c716b9ba.mp3",
-    duration: 201, // seconds (3:21)
+    duration: 201,
   },
   {
     title: "Dashboard Dreams",
@@ -24,7 +39,7 @@ const audioTracks = [
     album: "Cruisin'",
     art: "https://i.imgur.com/ZA7AKWD.png",
     src: "https://cdn.pixabay.com/audio/2023/05/30/audio_1418e61dbb.mp3",
-    duration: 248, // 4:08
+    duration: 248,
   },
   {
     title: "FM Memories",
@@ -32,17 +47,18 @@ const audioTracks = [
     album: "Afterglow",
     art: "https://i.imgur.com/9e3ldwV.png",
     src: "https://cdn.pixabay.com/audio/2023/04/24/audio_146a14c1ce.mp3",
-    duration: 176, // 2:56
-  }
+    duration: 176,
+  },
 ];
-// Fallback single test track if all above src URLs are broken (network or source removed):
+
+// Fallback single test track: always uses a known working MP3 clip
 const fallbackTrack = {
   title: "Sample Track (Add your own music!)",
   artist: "MelodyMaster",
   album: "Demo Album",
   art: "https://i.imgur.com/IJQZRlm.png",
-  src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  duration: 347 // Approx, not perfectly accurate
+  src: TESTED_MP3,
+  duration: 347, // (seconds, approx)
 };
 
 const stereoTheme = {
