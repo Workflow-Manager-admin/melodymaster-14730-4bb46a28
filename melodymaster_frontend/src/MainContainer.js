@@ -233,7 +233,38 @@ function MainContainer() {
         fontFamily: "'Orbitron', 'Inter', monospace",
       }}
     >
-      <div className="car-stereo-shell">
+      {!hasValidTracks || cannotPlayAny ? (
+        <div style={{
+          color: "#ff5252",
+          background: "#210f0fcd",
+          border: "2px solid #b81e1e",
+          borderRadius: "15px",
+          padding: "22px 30px",
+          maxWidth: 460,
+          fontFamily: "Inter, Arial, sans-serif",
+          marginBottom: 32,
+          textAlign: "center",
+          marginTop: 32
+        }}>
+          <h2 style={{ margin: "0 0 8px 0" }}>No supported audio sources found!</h2>
+          <div>
+            {audioError ? (
+              <span>{audioError}</span>
+            ) : (
+              <span>
+                <b>How to fix:</b> Add one or more working music files (mp3, wav, etc) to the <code>audioTracks</code> array<br />
+                in <code>MainContainer.js</code>. Example URLs:<br />
+                <code>https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3</code><br />
+                <br />
+                Or, check your internet connection/network. <br />
+                <br />
+                <b>Developer note:</b> You can update or add more demo audio track URLs for testing playback.
+              </span>
+            )}
+          </div>
+        </div>
+      ) : null}
+      <div className="car-stereo-shell" style={(!hasValidTracks || cannotPlayAny) ? { opacity: 0.45, pointerEvents: 'none' } : {}}>
         <div className="stereo-header">
           <div className="stereo-dial"></div>
           <div className="stereo-brand">MelodyMaster</div>
@@ -283,7 +314,7 @@ function MainContainer() {
 
         <audio
           ref={audioRef}
-          src={currentTrack.src}
+          src={currentTrack && currentTrack.src ? currentTrack.src : ""}
           preload="auto"
           style={{ display: "none" }}
           tabIndex={-1}
