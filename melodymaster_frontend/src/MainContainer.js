@@ -16,7 +16,17 @@ import React, { useRef, useState, useEffect } from "react";
  */
 const TESTED_MP3 = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 
+// Ensure at least one always-valid public MP3 is present in audioTracks as the default
 const audioTracks = [
+  // Default guaranteed playable track:
+  {
+    title: "Sample Track (Add your own music!)",
+    artist: "MelodyMaster",
+    album: "Demo Album",
+    art: "https://i.imgur.com/IJQZRlm.png",
+    src: TESTED_MP3,
+    duration: 347,
+  },
   // Add your own valid tracks here as needed, e.g.:
   // { title: "My Local Song", artist: "You", album: "Your Album", art: "local-artwork.png", src: process.env.PUBLIC_URL + '/my_song.mp3', duration: 180 },
   {
@@ -45,7 +55,7 @@ const audioTracks = [
   },
 ];
 
-// Fallback single test track: always uses a known working MP3 clip
+// Fallback single test track in case array gets emptied somehow
 const fallbackTrack = {
   title: "Sample Track (Add your own music!)",
   artist: "MelodyMaster",
