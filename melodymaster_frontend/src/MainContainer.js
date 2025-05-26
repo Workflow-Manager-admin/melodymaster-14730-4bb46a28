@@ -342,16 +342,55 @@ function MainContainer() {
             {/* --- Animated visualizer below controls --- */}
             <Visualizer active={playing} />
             {/* Controls */}
-            <div className="stereo-controls-wide">
-              <button className="control-btn-wide btn-prev" onClick={handlePrev} aria-label="Previous track">
+            <div
+              className="stereo-controls-wide"
+              style={{
+                display: "flex",
+                justifyContent: "center", // center the group as a whole
+                alignItems: "center",
+                gap: "38px", // more evident gap for even spacing
+                width: "100%",
+              }}
+            >
+              <button
+                className="control-btn-wide btn-prev"
+                onClick={handlePrev}
+                aria-label="Previous track"
+                style={{
+                  flex: "0 1 60px",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
                 <span className="btn-knob-wide">&#9198;</span>
               </button>
-              <button className="control-btn-wide btn-playpause" onClick={handlePlayPause} aria-label={playing ? "Pause" : "Play"}>
+              <button
+                className="control-btn-wide btn-playpause"
+                onClick={handlePlayPause}
+                aria-label={playing ? "Pause" : "Play"}
+                style={{
+                  flex: "0 1 65px",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
                 <span className="btn-knob-wide">
                   {playing ? <span>&#10073;&#10073;</span> : <span>&#9654;</span>}
                 </span>
               </button>
-              <button className="control-btn-wide btn-next" onClick={handleNext} aria-label="Next track">
+              <button
+                className="control-btn-wide btn-next"
+                onClick={handleNext}
+                aria-label="Next track"
+                style={{
+                  flex: "0 1 60px",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
                 <span className="btn-knob-wide">&#9197;</span>
               </button>
             </div>
@@ -607,10 +646,12 @@ function MainContainer() {
             border-radius: 18px 18px 30px 30px;
             border: 3px solid #353822;
             display: flex;
+            justify-content: center; /* centers all controls horizontally */
             align-items: center;
-            gap: 26px;
+            gap: 38px; /* larger, even spacing */
             min-width: 294px;
             max-width: 360px;
+            width: 100%;
             box-shadow: 0 1.7px 20px #0008 inset, 0 1.3px 14px #2227;
           }
           .control-btn-wide {
