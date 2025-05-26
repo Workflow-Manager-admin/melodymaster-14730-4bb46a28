@@ -617,62 +617,6 @@ function MainContainer() {
             align-items: flex-start;
             width: 100%;
           }
-          .current-albumart-wrap {
-            margin-top: 2px;
-            width: 137px;
-            height: 137px;
-            border-radius: 17px;
-            border: 4px solid #393e35;
-            background: linear-gradient(120deg, #112, #242727 99%);
-            box-shadow: 0 2px 22px #71985e26, 0 0.5px 6.5px #282a269b;
-            position: relative;
-            z-index: 2;
-            display: flex; align-items: center; justify-content: center;
-            overflow: visible;
-          }
-          .current-albumart-glow {
-            position: absolute; z-index: 2;
-            top: 5px; left: 10px; right: 10px; bottom: 5px;
-            border-radius: 13px;
-            box-shadow: 0 0 38px 17px #60da8a39, 0 0 15px 4px #0008;
-            pointer-events: none;
-            background: transparent;
-            opacity: 0.34;
-          }
-          .album-art-img {
-            width: 116px; height: 116px;
-            object-fit: cover;
-            border-radius: 13px;
-            position: relative;
-            box-shadow: 0 3px 18px #132b17a5, 0 0.5px 2.9px #334833;
-            border: 1.5px solid #a1a7a7;
-            z-index: 5;
-            will-change: filter, transform;
-            transition: filter .45s, box-shadow .45s, border-color .22s;
-          }
-          .album-art-img.playing {
-            filter: brightness(1.13) drop-shadow(0 0 14px #4bac6c25);
-            border-color: ${stereoTheme.primary};
-            box-shadow: 0 7px 38px #1DB95444;
-          }
-          .spinning-vinyl {
-            position: absolute;
-            left: 50%; top: 50%;
-            width: 116px; height: 116px;
-            transform: translate(-50%, -50%);
-            border-radius: 100%;
-            box-shadow: 0 0 13px #146A4C55 inset, 0 0 22px #000 inset;
-            border: 3px dashed #eee4;
-            pointer-events: none;
-            opacity: 0.15;
-            z-index: 4;
-            transition: opacity 0.6s;
-            mix-blend-mode: multiply;
-          }
-          .spinning-vinyl.vinyl-on {
-            opacity: 0.26;
-            animation: spinning 2.2s linear infinite;
-          }
 
           .stereo-mainstack {
             display: flex;
