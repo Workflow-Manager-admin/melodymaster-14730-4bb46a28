@@ -162,8 +162,8 @@ function Visualizer({ active }) {
  * 
  * Handles .mp3-only enforcement and file validation.
  */
-// PUBLIC_INTERFACE
 function MainContainer() {
+  // No Now Playing button present; any Now Playing related rendering or handlers have been removed.
   const [currentIdx, setCurrentIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -189,7 +189,6 @@ function MainContainer() {
     if (!audioRef.current) return;
     const audio = audioRef.current;
     const setFakeDurationIfMissing = () => {
-      // set duration for user-uploaded files if missing
       if (
         userTracks.length > 0 &&
         currentTrack.src &&
@@ -197,7 +196,6 @@ function MainContainer() {
         !isNaN(audio.duration) &&
         isFinite(audio.duration)
       ) {
-        // Update only the uploaded track that matches
         setUserTracks((prev) =>
           prev.map(ut =>
             ut.src === currentTrack.src && (ut.duration == null)
@@ -212,7 +210,6 @@ function MainContainer() {
     // eslint-disable-next-line
   }, [currentTrack.src, userTracks.length]);
 
-  // Error handling for audio element
   useEffect(() => {
     if (!audioRef.current) return;
     const handleAudioError = () => {
@@ -247,7 +244,6 @@ function MainContainer() {
       audio.removeEventListener("timeupdate", update);
       audio.removeEventListener("ended", handleTrackEnd);
     };
-  // Only update listeners when the track index changes (or player is re-mounted)
   }, [currentIdx]);
 
   const handleTrackClick = (idx) => {
@@ -278,14 +274,11 @@ function MainContainer() {
     handleNext();
   }
 
-  // PUBLIC_INTERFACE
-  // Handle file input changes (for .mp3 upload)
   function handleFileChange(e) {
     setFileError(""); // Reset UI error
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
-    // Only accept .mp3 files
     const mp3Files = files.filter(
       f =>
         f.type === "audio/mpeg" ||
@@ -304,40 +297,33 @@ function MainContainer() {
       setFileError("Some selected files were not .mp3 and were ignored.");
     }
 
-    // Create URLs for playback. Give mock album art & extract filename
     const newTracks = mp3Files.map((file, idx) => {
-      // Provide rotating placeholder art to distinguish
       const mockArts = [
         "https://placehold.co/120x120/2ecc40/ffffff.png?text=Your+Song",
         "https://placehold.co/120x120/ff8b4d/fff.png?text=MP3",
         "https://placehold.co/120x120/8888FF/fff.png?text=Music",
         "https://placehold.co/120x120/E87A41/fff.png?text=Upload",
       ];
-      // Remove base extension for title
       const name = file.name.replace(/\.mp3$/i, "");
       return {
         title: name,
         artist: "You",
         album: "Uploaded",
         art: mockArts[(userTracks.length + idx) % mockArts.length],
-        src: URL.createObjectURL(file), // Blob URL
-        duration: null, // will be resolved later when played
+        src: URL.createObjectURL(file),
+        duration: null,
         isUploaded: true,
       };
     });
 
-    // Append to track list (avoid duplicate src by file name, for simplicity)
     setUserTracks(prev => {
       const prevSources = prev.map(t => t.src);
-      // Avoid duplicate files with same content (same file = same blob url?)
       const uniqueNew = newTracks.filter(t => !prevSources.includes(t.src));
       return [...prev, ...uniqueNew];
     });
-    // Optionally, if upload, scroll to new track and select
     setCurrentIdx(availableTracks.length + newTracks.length - 1);
   }
 
-  // WIDE Stereo main style: much wider and less tall than before, retro details
   return (
     <div
       style={{
