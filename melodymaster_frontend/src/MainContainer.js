@@ -1,31 +1,37 @@
-import React, { useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 
 // PUBLIC_INTERFACE
 /**
  * MelodyMaster MainContainer - A React component styled as an old car stereo.
- * Features: Play/Pause, Skip/Prev, Album Art, Current Song Info, Retro-style.
+ * Features: Real Play/Pause, Skip/Prev, Album Art, Current Song Info, Progress Bar, Shuffle, Repeat, EQ, Retro-style.
  */
-const dummyTracks = [
+
+// --- Sample music files (royalty free and short for demo) ---
+// For local demo, using open-access mp3 files. You can replace src with own files if needed.
+const audioTracks = [
   {
     title: "Time Machine Groove",
     artist: "RetroWave",
     album: "Neon Nights",
     art: "https://i.imgur.com/GVlQINJ.png",
-    duration: "3:21",
+    src: "https://cdn.pixabay.com/audio/2022/10/16/audio_12c716b9ba.mp3",
+    duration: 201, // seconds (3:21)
   },
   {
     title: "Dashboard Dreams",
     artist: "Synth Escape",
     album: "Cruisin'",
     art: "https://i.imgur.com/ZA7AKWD.png",
-    duration: "4:08",
+    src: "https://cdn.pixabay.com/audio/2023/05/30/audio_1418e61dbb.mp3",
+    duration: 248, // 4:08
   },
   {
     title: "FM Memories",
     artist: "Night Drive",
     album: "Afterglow",
     art: "https://i.imgur.com/9e3ldwV.png",
-    duration: "2:56",
+    src: "https://cdn.pixabay.com/audio/2023/04/24/audio_146a14c1ce.mp3",
+    duration: 176, // 2:56
   },
 ];
 
@@ -37,6 +43,13 @@ const stereoTheme = {
   digital: "#EFEA91",
 };
 
+function formatTime(secs) {
+  if (isNaN(secs)) return "--:--";
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 function getNextTrackIdx(idx, dir, length) {
   let next = idx + dir;
   if (next < 0) return length - 1;
@@ -46,24 +59,128 @@ function getNextTrackIdx(idx, dir, length) {
 
 // PUBLIC_INTERFACE
 function MainContainer() {
-  // Simulate playback state
+  // Playback state
   const [currentIdx, setCurrentIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0); // seconds
+  const [shuffle, setShuffle] = useState(false);
+  const [repeat, setRepeat] = useState(false);
+  const [showEQ, setShowEQ] = useState(false);
 
-  const currentTrack = dummyTracks[currentIdx];
+  const audioRef = useRef(null);
+  const progressRef = useRef(null);
 
-  // Handlers
+  const currentTrack = audioTracks[currentIdx];
+
+  // Play/Pause logic
+  useEffect(() => {
+    if (audioRef.current) {
+      if (playing) {
+        audioRef.current.play();
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [playing, currentIdx]);
+
+  // Sync progress bar
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const update = () => setProgress(audio.currentTime);
+    audio.addEventListener("timeupdate", update);
+    audio.addEventListener("ended", handleTrackEnd);
+    return () => {
+      audio.removeEventListener("timeupdate", update);
+      audio.removeEventListener("ended", handleTrackEnd);
+    };
+    // eslint-disable-next-line
+  }, [currentIdx, repeat, shuffle]);
+
+  // If the user clicks track, start playing
+  const handleTrackClick = (idx) => {
+    setCurrentIdx(idx);
+    setProgress(0);
+    setPlaying(true);
+  };
+
+  // Play/Pause
   const handlePlayPause = () => setPlaying((p) => !p);
-  const handleNext = () =>
-    setCurrentIdx((idx) => getNextTrackIdx(idx, 1, dummyTracks.length));
-  const handlePrev = () =>
-    setCurrentIdx((idx) => getNextTrackIdx(idx, -1, dummyTracks.length));
 
-  const handleTrackClick = (idx) => setCurrentIdx(idx);
+  // Next/Prev logic (with shuffle)
+  function getRandomIdx(excl) {
+    if (audioTracks.length < 2) return excl;
+    let next;
+    do {
+      next = Math.floor(Math.random() * audioTracks.length);
+    } while (next === excl);
+    return next;
+  }
 
-  // Render function
+  const handleNext = () => {
+    setProgress(0);
+    if (shuffle) {
+      setCurrentIdx((idx) => getRandomIdx(idx));
+    } else {
+      setCurrentIdx((idx) => getNextTrackIdx(idx, 1, audioTracks.length));
+    }
+    setPlaying(true);
+  };
+  const handlePrev = () => {
+    setProgress(0);
+    if (shuffle) {
+      setCurrentIdx((idx) => getRandomIdx(idx));
+    } else {
+      setCurrentIdx((idx) => getNextTrackIdx(idx, -1, audioTracks.length));
+    }
+    setPlaying(true);
+  };
+
+  // Progress Bar - Seeking
+  const handleBarChange = (e) => {
+    const val = Number(e.target.value);
+    setProgress(val);
+    if (audioRef.current) {
+      audioRef.current.currentTime = val;
+    }
+  };
+
+  // When audio ends
+  function handleTrackEnd() {
+    if (repeat) {
+      setProgress(0);
+      if (audioRef.current) audioRef.current.currentTime = 0;
+      setPlaying(true);
+      audioRef.current?.play();
+    } else {
+      handleNext();
+    }
+  }
+
+  // Extra controls for demonstration: EQ and Eject
+  const handleEQ = () => setShowEQ((e) => !e);
+  const handleEject = () => {
+    setPlaying(false);
+    setProgress(0);
+    if (audioRef.current) audioRef.current.currentTime = 0;
+  };
+
+  // active button highlight
+  const btnActive = (on) => (on ? { filter: `drop-shadow(0 0 6px ${stereoTheme.primary}) brightness(1.3)` } : {});
+
+  // Render
   return (
-    <div style={{ minHeight: "100vh", background: stereoTheme.secondary, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Orbitron', 'Inter', monospace", }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: stereoTheme.secondary,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: "'Orbitron', 'Inter', monospace",
+      }}
+    >
       <div className="car-stereo-shell">
         <div className="stereo-header">
           <div className="stereo-dial"></div>
@@ -86,45 +203,160 @@ function MainContainer() {
               <span className="display-album">{currentTrack.album}</span>
             </div>
             <div className="display-duration">
-              <span role="img" aria-label="timer" style={{filter: 'drop-shadow(1px 1px 0 #444)'}}>⏱️</span> {currentTrack.duration}
+              <span role="img" aria-label="timer" style={{ filter: "drop-shadow(1px 1px 0 #444)" }}>
+                ⏱️
+              </span>{" "}
+              {formatTime(progress)} / {formatTime(currentTrack.duration)}
+            </div>
+            <div className="progress-bar-row" style={{ width: "86%", margin: "0.75em 0 0.25em 0" }}>
+              <input
+                type="range"
+                min="0"
+                max={currentTrack.duration}
+                step="1"
+                value={progress}
+                ref={progressRef}
+                onChange={handleBarChange}
+                style={{
+                  width: "100%",
+                  accentColor: stereoTheme.primary,
+                  background: "linear-gradient(90deg, #22cf71, #056634 95%)",
+                }}
+                className="progressbar"
+                aria-label="Seek position"
+              />
             </div>
           </div>
         </div>
 
-        <div className="stereo-tracklist">
-          <div className="tracklist-label">TRACKLIST</div>
-          <ul>
-            {dummyTracks.map((track, idx) => (
-              <li
-                key={track.title}
-                className={idx === currentIdx ? "selected" : ""}
-                onClick={() => handleTrackClick(idx)}
-              >
-                <span className="track-title">{track.title}</span>
-                <span className="track-artist">{track.artist}</span>
-                <span className="track-duration">{track.duration}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <audio
+          ref={audioRef}
+          src={currentTrack.src}
+          preload="auto"
+          style={{ display: "none" }}
+          tabIndex={-1}
+        />
 
-        <div className="stereo-controls">
+        <div className="stereo-controls plus-extra-controls">
           <button className="control-btn btn-prev" onClick={handlePrev} aria-label="Previous track">
             <span className="btn-knob">&#9198;</span>
           </button>
           <button className="control-btn btn-playpause" onClick={handlePlayPause} aria-label={playing ? "Pause" : "Play"}>
             <span className="btn-knob">
               {playing ? (
-                <span>&#10073;&#10073;</span> // Pause symbol
+                <span>&#10073;&#10073;</span>
               ) : (
-                <span>&#9654;</span> // Play symbol
+                <span>&#9654;</span>
               )}
             </span>
           </button>
           <button className="control-btn btn-next" onClick={handleNext} aria-label="Next track">
             <span className="btn-knob">&#9197;</span>
           </button>
+          <button
+            className="control-btn btn-shuffle"
+            aria-label="Shuffle"
+            style={btnActive(shuffle)}
+            onClick={() => setShuffle((s) => !s)}
+          >
+            <span className="btn-knob">&#128256;</span>
+            {/* Unicode: 🔀 */}
+          </button>
+          <button
+            className="control-btn btn-repeat"
+            aria-label="Repeat"
+            style={btnActive(repeat)}
+            onClick={() => setRepeat((r) => !r)}
+          >
+            <span className="btn-knob">&#128257;</span>
+            {/* Unicode: 🔁 */}
+          </button>
+          <button
+            className="control-btn btn-eject"
+            aria-label="Eject"
+            style={btnActive(false)}
+            onClick={handleEject}
+          >
+            <span className="btn-knob">&#9167;</span>
+            {/* Unicode: ⏏️ */}
+          </button>
+          <button
+            className="control-btn btn-eq"
+            aria-label="Equalizer"
+            style={btnActive(showEQ)}
+            onClick={handleEQ}
+          >
+            <span className="btn-knob">&#119070;</span>
+            {/* Unicode: 𝅗𝅥 (musical symbol as faux EQ toggle) */}
+          </button>
         </div>
+
+        <div className="stereo-tracklist">
+          <div className="tracklist-label">TRACKLIST</div>
+          <ul>
+            {audioTracks.map((track, idx) => (
+              <li
+                key={track.title}
+                className={idx === currentIdx ? "selected" : ""}
+                onClick={() => handleTrackClick(idx)}
+                style={idx === currentIdx ? { fontWeight: 700, textShadow: "0 0 7px #1DB95450" } : undefined}
+              >
+                <span className="track-title">{track.title}</span>
+                <span className="track-artist">{track.artist}</span>
+                <span className="track-duration">{formatTime(track.duration)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {showEQ && (
+          <div
+            className="eq-popup"
+            style={{
+              color: stereoTheme.primary,
+              background: "#101310f7",
+              border: `2.5px solid #4f6c47`,
+              borderRadius: 12,
+              position: "absolute",
+              right: "7px",
+              bottom: "92px",
+              fontSize: "1rem",
+              padding: "16px 14px 11px 14px",
+              boxShadow: "0 1.5px 12px #060c",
+              zIndex: 10,
+              width: "160px",
+            }}
+          >
+            <div style={{ fontFamily: "Orbitron", fontWeight: 900, fontSize: "1.1em", letterSpacing: 2, color: "#c6ffcd" }}>
+              EQ Settings
+            </div>
+            <div style={{ marginTop: 11, color: "#b2e38f", fontFamily: "inherit", letterSpacing: "1.3px", fontSize: "0.98em" }}>
+              Bass: <span style={{ color: "#fff", fontWeight: 600 }}>+2</span>
+              <br />
+              Treble: <span style={{ color: "#fff", fontWeight: 600 }}>-1</span>
+              <br />
+              Loudness: <span style={{ color: "#fff", fontWeight: 600 }}>ON</span>
+              <div style={{ marginTop: 7, color: "#aee", fontFamily: "monospace", fontSize: "0.91em" }}>Vintage simulated</div>
+            </div>
+            <button
+              onClick={() => setShowEQ(false)}
+              style={{
+                marginTop: 13,
+                background: "#1DB954",
+                color: "#191414",
+                border: "none",
+                borderRadius: 7,
+                fontWeight: 600,
+                padding: "4.2px 13px",
+                fontFamily: "Orbitron, monospace",
+                cursor: "pointer",
+                fontSize: "0.98em",
+              }}
+            >
+              Close
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Inline style for retro font import */}
@@ -134,6 +366,51 @@ function MainContainer() {
       {/* Retro Car Stereo Styles */}
       <style>
         {`
+        .progress-bar-row {
+          display: flex;
+          align-items: center;
+          margin: 7px 0 0 0;
+        }
+        .progressbar[type="range"]::-webkit-slider-thumb {
+          background: ${stereoTheme.primary};
+        }
+        .progressbar {
+          margin-top: 1px;
+        }
+        /* Extra stereo controls */
+        .plus-extra-controls {
+          flex-wrap: wrap;
+          gap: 18px !important;
+          justify-content: flex-start;
+          min-width: 200px;
+        }
+        .btn-shuffle, .btn-repeat, .btn-eject, .btn-eq {
+          font-size: 1.16rem;
+          color: #b0d2ad;
+          border: 3px solid #267643;
+          background: radial-gradient(circle, #071808 60%, #1DB95422 100%);
+          box-shadow: 0 1px 8px #13240e;
+          width: 43px; height: 43px;
+          margin-left: 5px;
+          margin-right: 0px;
+        }
+        .btn-shuffle:active,
+        .btn-repeat:active,
+        .btn-eject:active,
+        .btn-eq:active {
+          color: ${stereoTheme.primary};
+          background: #11471d44;
+          border-color: ${stereoTheme.primary};
+        }
+        .eq-popup {
+          animation: popfade .42s cubic-bezier(.46,-0.38,.68,1.6);
+        }
+        @keyframes popfade {
+          from { opacity: 0; transform: scale(.72) translateY(30px);}
+          to { opacity: 1; transform: scale(1) translateY(0);}
+        }
+
+        /* Original stereo CSS preserved below */
         .car-stereo-shell {
           background: linear-gradient(160deg, #222 60%, #444 100%);
           border-radius: 28px;
@@ -221,7 +498,6 @@ function MainContainer() {
           flex: 1 1 180px;
           min-width: 164px;
           display: flex; flex-direction: column; align-items: flex-start;
-          /* Old digital display styling */
         }
         .digital-display {
           background: repeating-linear-gradient(
