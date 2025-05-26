@@ -269,12 +269,12 @@ function MainContainer() {
             ) : (
               <span>
                 <b>How to fix:</b> Add one or more working music files (mp3, wav, etc) to the <code>audioTracks</code> array<br />
-                in <code>MainContainer.js</code>. Example URLs:<br />
+                in <code>MainContainer.js</code>. Example fallback used:<br />
                 <code>https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3</code><br />
                 <br />
                 Or, check your internet connection/network. <br />
                 <br />
-                <b>Developer note:</b> You can update or add more demo audio track URLs for testing playback.
+                <b>Developer note:</b> The player will automatically use a tested MP3 if none of your tracks are playable.
               </span>
             )}
           </div>
