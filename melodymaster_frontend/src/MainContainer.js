@@ -207,8 +207,8 @@ function MainContainer() {
       audio.removeEventListener("timeupdate", update);
       audio.removeEventListener("ended", handleTrackEnd);
     };
-    // eslint-disable-next-line
-  }, [currentIdx, repeat, shuffle]);
+    // Removed dependencies for repeat and shuffle which no longer exist
+  }, [currentIdx]);
 
   const handleTrackClick = (idx) => {
     setCurrentIdx(idx);
