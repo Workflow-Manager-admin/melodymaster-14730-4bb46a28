@@ -87,3 +87,19 @@ src/MainContainer.js
 
 webpack compiled with 1 warning
 Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/MainContainer.js
+  Line 217:36:  The ref value 'audioRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'audioRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+  Line 241:6:   React Hook useEffect has a missing dependency: 'handleTrackEnd'. Either include it or remove the dependency array                                                                                                                                                react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/MainContainer.js
+  Line 217:36:  The ref value 'audioRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'audioRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+  Line 241:6:   React Hook useEffect has a missing dependency: 'handleTrackEnd'. Either include it or remove the dependency array                                                                                                                                                react-hooks/exhaustive-deps
+
+webpack compiled with 1 warning
