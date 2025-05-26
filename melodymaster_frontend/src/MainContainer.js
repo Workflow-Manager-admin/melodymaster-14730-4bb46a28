@@ -621,9 +621,46 @@ function MainContainer() {
         {/* Top info bar: Brand + Lights */}
         <div className="stereo-header-wide">
           <div className="stereo-brand-wide">MelodyMaster</div>
-          <div className="stereo-lights-wide">
-            <span className={`stereo-light-wide ${playing ? "on" : ""}`}></span>
-            <span className={`stereo-light-wide ${playing ? "on" : ""}`}></span>
+          <div style={{display: "flex", alignItems: "center", gap: "12px"}}>
+            {/* EQ icon (only when valid tracks) */}
+            {hasValidTracks && (
+              <button
+                aria-label="Open equalizer"
+                style={{
+                  background: "none",
+                  border: "2px solid #1DB954",
+                  borderRadius: "13px",
+                  color: "#efeab4",
+                  marginRight: "2px",
+                  padding: "3px 7px 2px 7px",
+                  fontSize: "1.15em",
+                  cursor: "pointer",
+                  boxShadow: "0 1.5px 8px #191d1998",
+                  fontFamily: "'Orbitron', monospace"
+                }}
+                onClick={handleShowEq}
+                tabIndex={0}
+              >
+                {/* Retro EQ Icon */}
+                <span style={{
+                  display:"inline-block", verticalAlign: "middle"
+                }}>
+                  {/* Simple retro EQ symbol: 3 vertical sliders */}
+                  <svg width="26" height="20" viewBox="0 0 27 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{filter:"drop-shadow(0 0 3px #1DB954bb)"}}>
+                    <rect x="3" y="6" width="2.7" height="11" rx="1.15" fill="#baff71"/>
+                    <rect x="12.6" y="2" width="2.7" height="15" rx="1.14" fill="#ebe8b3"/>
+                    <rect x="22" y="10" width="2.7" height="7" rx="1.1" fill="#baff71"/>
+                    <circle cx="4.4" cy="13" r="2.2" fill="#1DB954" stroke="#beeba4" strokeWidth="1.2"/>
+                    <circle cx="13.95" cy="7" r="2.2" fill="#1DB954" stroke="#ebe8b3" strokeWidth="1.2"/>
+                    <circle cx="23.35" cy="14" r="2.15" fill="#1DB954" stroke="#beeba4" strokeWidth="1.2"/>
+                  </svg>
+                </span>
+              </button>
+            )}
+            <div className="stereo-lights-wide">
+              <span className={`stereo-light-wide ${playing ? "on" : ""}`}></span>
+              <span className={`stereo-light-wide ${playing ? "on" : ""}`}></span>
+            </div>
           </div>
         </div>
 
@@ -755,6 +792,22 @@ function MainContainer() {
       </div>
 
       {/* Fonts and main styles */}
+      {/* EQ Popup */}
+      {showEqPopup && (
+        <RetroCarEqualizer
+          showPopup={showEqPopup}
+          hidePopup={handleHideEq}
+          style={{
+            position: "absolute",
+            right: 43,
+            bottom: 64,
+            zIndex: 20
+          }}
+          webAudio={webAudio}
+          bands={eqBands}
+          setBands={setEqBands}
+        />
+      )}
       <style>
         {`@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');`}
       </style>
