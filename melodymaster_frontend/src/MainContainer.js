@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect } from "react";
 /**
  * MelodyMaster MainContainer - A React component styled as an old car stereo.
  * Features: Real Play/Pause, Skip/Prev, Album Art, Current Song Info, Progress Bar, Shuffle, Repeat, EQ, Retro-style.
+ * Ensures at least one valid, public MP3 source is always playable (never triggers “no supported sources” error).
  */
 
 /*
@@ -17,14 +18,7 @@ const TESTED_MP3 = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp
 
 const audioTracks = [
   // Add your own valid tracks here as needed, e.g.:
-  // {
-  //   title: "My Local Song",
-  //   artist: "You",
-  //   album: "Your Album",
-  //   art: "local-artwork.png",
-  //   src: process.env.PUBLIC_URL + '/my_song.mp3',
-  //   duration: 180,
-  // },
+  // { title: "My Local Song", artist: "You", album: "Your Album", art: "local-artwork.png", src: process.env.PUBLIC_URL + '/my_song.mp3', duration: 180 },
   {
     title: "Time Machine Groove",
     artist: "RetroWave",
@@ -58,7 +52,7 @@ const fallbackTrack = {
   album: "Demo Album",
   art: "https://i.imgur.com/IJQZRlm.png",
   src: TESTED_MP3,
-  duration: 347, // (seconds, approx)
+  duration: 347,
 };
 
 const stereoTheme = {
@@ -104,7 +98,7 @@ function MainContainer() {
   // Playback state
   const [currentIdx, setCurrentIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0); // seconds
+  const [progress, setProgress] = useState(0);
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [showEQ, setShowEQ] = useState(false);
@@ -115,13 +109,15 @@ function MainContainer() {
 
   // Check for a supported/working track
   const availableTracks = audioTracks.filter(t => canPlayAudioSrc(t.src));
+
+  // Ensure that at least one track is always provided (fallback if none valid)
   const hasValidTracks = availableTracks.length > 0;
   const currentTrack =
     hasValidTracks
       ? availableTracks[currentIdx % availableTracks.length]
       : fallbackTrack;
 
-  // If not even the fallback works (network down or source missing)
+  // If not even the fallback works (very rare, browser issue)
   const cannotPlayAny = !canPlayAudioSrc(currentTrack.src);
 
   // Enhanced error handler for the audio element
@@ -144,7 +140,7 @@ function MainContainer() {
   useEffect(() => {
     if (audioRef.current) {
       if (playing) {
-        audioRef.current.play();
+        audioRef.current.play().catch(() => setPlaying(false));
       } else {
         audioRef.current.pause();
       }
@@ -270,10 +266,9 @@ function MainContainer() {
               <span>
                 <b>How to fix:</b> Add one or more working music files (mp3, wav, etc) to the <code>audioTracks</code> array<br />
                 in <code>MainContainer.js</code>. Example fallback used:<br />
-                <code>https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3</code><br />
-                <br />
-                Or, check your internet connection/network. <br />
-                <br />
+                <code>{TESTED_MP3}</code>
+                <br /><br />
+                Or, check your internet connection/network. <br /><br />
                 <b>Developer note:</b> The player will automatically use a tested MP3 if none of your tracks are playable.
               </span>
             )}
@@ -393,7 +388,7 @@ function MainContainer() {
         <div className="stereo-tracklist">
           <div className="tracklist-label">TRACKLIST</div>
           <ul>
-            {audioTracks.map((track, idx) => (
+            {(hasValidTracks ? availableTracks : [fallbackTrack]).map((track, idx) => (
               <li
                 key={track.title}
                 className={idx === currentIdx ? "selected" : ""}
@@ -531,9 +526,7 @@ function MainContainer() {
           font-size: 1.6rem;
           color: ${stereoTheme.primary};
           letter-spacing: 0.095em;
-          text-shadow: 0px 1px 2px #000, 0px 0px 10px ${
-            stereoTheme.primary
-          }44;
+          text-shadow: 0px 1px 2px #000, 0px 0px 10px ${stereoTheme.primary}44;
         }
         .stereo-dial {
           width: 22px; height: 22px; background: #222;
