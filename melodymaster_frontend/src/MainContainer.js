@@ -162,10 +162,7 @@ function MainContainer() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [shuffle, setShuffle] = useState(false);
-  const [repeat, setRepeat] = useState(false);
-  const [showEQ, setShowEQ] = useState(false);
-
+  // Only minimal playback states remain (no shuffle, repeat, EQ, or eject)
   const [audioError, setAudioError] = useState("");
   const audioRef = useRef(null);
   const progressRef = useRef(null);
@@ -388,55 +385,7 @@ function MainContainer() {
               <button className="control-btn-wide btn-next" onClick={handleNext} aria-label="Next track">
                 <span className="btn-knob-wide">&#9197;</span>
               </button>
-              <button className="control-btn-wide btn-shuffle" aria-label="Shuffle"
-                style={btnActive(shuffle)} onClick={() => setShuffle((s) => !s)}>
-                <span className="btn-knob-wide">&#128256;</span>
-              </button>
-              <button className="control-btn-wide btn-repeat" aria-label="Repeat"
-                style={btnActive(repeat)} onClick={() => setRepeat((r) => !r)}>
-                <span className="btn-knob-wide">&#128257;</span>
-              </button>
-              <button className="control-btn-wide btn-eject" aria-label="Eject"
-                onClick={handleEject}>
-                <span className="btn-knob-wide">&#9167;</span>
-              </button>
-              <button className="control-btn-wide btn-eq" aria-label="Equalizer"
-                style={btnActive(showEQ)} onClick={handleEQ}>
-                <span className="btn-knob-wide">&#119070;</span>
-              </button>
             </div>
-            {showEQ && (
-              <div className="eq-popup-wide">
-                <div style={{ fontFamily: "Orbitron", fontWeight: 900, fontSize: "1.1em", letterSpacing: 2, color: "#c6ffcd" }}>
-                  EQ Settings
-                </div>
-                <div style={{ marginTop: 11, color: "#b2e38f", fontFamily: "inherit", letterSpacing: "1.3px", fontSize: "0.98em" }}>
-                  Bass: <span style={{ color: "#fff", fontWeight: 600 }}>+2</span>
-                  <br />
-                  Treble: <span style={{ color: "#fff", fontWeight: 600 }}>-1</span>
-                  <br />
-                  Loudness: <span style={{ color: "#fff", fontWeight: 600 }}>ON</span>
-                  <div style={{ marginTop: 7, color: "#aee", fontFamily: "monospace", fontSize: "0.91em" }}>Vintage simulated</div>
-                </div>
-                <button
-                  onClick={() => setShowEQ(false)}
-                  style={{
-                    marginTop: 13,
-                    background: "#1DB954",
-                    color: "#191414",
-                    border: "none",
-                    borderRadius: 7,
-                    fontWeight: 600,
-                    padding: "4.2px 13px",
-                    fontFamily: "Orbitron, monospace",
-                    cursor: "pointer",
-                    fontSize: "0.98em",
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-            )}
           </div>
           {/* Track List: thumb+meta */}
           <div className="tracklist-stack">
