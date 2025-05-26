@@ -67,6 +67,22 @@ function getNextTrackIdx(idx, dir, length) {
   return next;
 }
 
+/**
+ * Checks if the browser can play the track's source (by file extension, basic test).
+ * @param {string} src
+ * @returns {boolean}
+ */
+function canPlayAudioSrc(src) {
+  if (!src) return false;
+  const testAudio = document.createElement('audio');
+  const ext = src.split(".").pop().toLowerCase();
+  if (ext === "mp3") return !!testAudio.canPlayType("audio/mpeg");
+  if (ext === "wav") return !!testAudio.canPlayType("audio/wav");
+  if (ext === "ogg") return !!testAudio.canPlayType("audio/ogg");
+  // fallback guess for other schemes
+  return true;
+}
+
 // PUBLIC_INTERFACE
 function MainContainer() {
   // Playback state
@@ -76,11 +92,37 @@ function MainContainer() {
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [showEQ, setShowEQ] = useState(false);
+  const [audioError, setAudioError] = useState('');
 
   const audioRef = useRef(null);
   const progressRef = useRef(null);
 
-  const currentTrack = audioTracks[currentIdx];
+  // Check for a supported/working track
+  const availableTracks = audioTracks.filter(t => canPlayAudioSrc(t.src));
+  const hasValidTracks = availableTracks.length > 0;
+  const currentTrack =
+    hasValidTracks
+      ? availableTracks[currentIdx % availableTracks.length]
+      : fallbackTrack;
+
+  // If not even the fallback works (network down or source missing)
+  const cannotPlayAny = !canPlayAudioSrc(currentTrack.src);
+
+  // Enhanced error handler for the audio element
+  useEffect(() => {
+    if (!audioRef.current) return;
+    const handleAudioError = () => {
+      setAudioError(
+        "Audio format or source is not supported or not reachable. Please check your internet connection or try a different track. " +
+        "If you're developing, update the audioTracks array in MainContainer.js with valid mp3 or wav sources!"
+      );
+      setPlaying(false);
+    };
+    audioRef.current.addEventListener("error", handleAudioError);
+    return () => {
+      audioRef.current && audioRef.current.removeEventListener("error", handleAudioError);
+    };
+  }, [currentTrack.src]);
 
   // Play/Pause logic
   useEffect(() => {
