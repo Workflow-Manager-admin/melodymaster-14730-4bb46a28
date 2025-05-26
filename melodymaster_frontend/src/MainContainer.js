@@ -12,7 +12,7 @@ import React, { useRef, useState, useEffect } from "react";
 const TESTED_MP3 = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 
 // All tracks must have art. Art here uses illustrative mock album covers (unsplash, imgur, placeholder.com)
-const audioTracks = [
+const defaultTracks = [
   {
     title: "Sample Track (Add your own music!)",
     artist: "MelodyMaster",
@@ -157,22 +157,62 @@ function Visualizer({ active }) {
   );
 }
 
+/**
+ * Allows user to upload MP3 files, appends to track list, and enables playback.
+ * 
+ * Handles .mp3-only enforcement and file validation.
+ */
 // PUBLIC_INTERFACE
 function MainContainer() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  // Only minimal playback states remain (no shuffle, repeat, EQ, or eject)
   const [audioError, setAudioError] = useState("");
+  const [fileError, setFileError] = useState(""); // UI for upload errors
+  const [userTracks, setUserTracks] = useState([]); // Uploaded tracks: {title, src, art, ...}
+
   const audioRef = useRef(null);
   const progressRef = useRef(null);
+  const fileInputRef = useRef();
+
+  // Merge uploaded tracks with default
+  const allTracks = [...defaultTracks, ...userTracks];
 
   // Only tracks with supported source, fallback guarantee
-  const availableTracks = audioTracks.filter(t => canPlayAudioSrc(t.src));
+  const availableTracks = allTracks.filter(t => canPlayAudioSrc(t.src));
   const hasValidTracks = availableTracks.length > 0;
   const currentTrack = hasValidTracks ? availableTracks[currentIdx % availableTracks.length] : fallbackTrack;
   const cannotPlayAny = !canPlayAudioSrc(currentTrack.src);
 
+  // Attempt to get duration for uploaded audio (best effort for local files)
+  useEffect(() => {
+    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    const setFakeDurationIfMissing = () => {
+      // set duration for user-uploaded files if missing
+      if (
+        userTracks.length > 0 &&
+        currentTrack.src &&
+        currentTrack.duration == null &&
+        !isNaN(audio.duration) &&
+        isFinite(audio.duration)
+      ) {
+        // Update only the uploaded track that matches
+        setUserTracks((prev) =>
+          prev.map(ut =>
+            ut.src === currentTrack.src && (ut.duration == null)
+              ? { ...ut, duration: Math.round(audio.duration) }
+              : ut
+          )
+        );
+      }
+    };
+    audio.addEventListener("loadedmetadata", setFakeDurationIfMissing);
+    return () => audio.removeEventListener("loadedmetadata", setFakeDurationIfMissing);
+    // eslint-disable-next-line
+  }, [currentTrack.src, userTracks.length]);
+
+  // Error handling for audio element
   useEffect(() => {
     if (!audioRef.current) return;
     const handleAudioError = () => {
@@ -207,7 +247,7 @@ function MainContainer() {
       audio.removeEventListener("timeupdate", update);
       audio.removeEventListener("ended", handleTrackEnd);
     };
-    // Removed dependencies for repeat and shuffle which no longer exist
+  // Only update listeners when the track index changes (or player is re-mounted)
   }, [currentIdx]);
 
   const handleTrackClick = (idx) => {
@@ -217,15 +257,14 @@ function MainContainer() {
   };
   const handlePlayPause = () => setPlaying((p) => !p);
 
-  // Only next/prev/play logic remains; shuffle/repeat/eq/eject functionality is removed.
   const handleNext = () => {
     setProgress(0);
-    setCurrentIdx((idx) => getNextTrackIdx(idx, 1, audioTracks.length));
+    setCurrentIdx((idx) => getNextTrackIdx(idx, 1, availableTracks.length));
     setPlaying(true);
   };
   const handlePrev = () => {
     setProgress(0);
-    setCurrentIdx((idx) => getNextTrackIdx(idx, -1, audioTracks.length));
+    setCurrentIdx((idx) => getNextTrackIdx(idx, -1, availableTracks.length));
     setPlaying(true);
   };
   const handleBarChange = (e) => {
@@ -237,6 +276,65 @@ function MainContainer() {
   };
   function handleTrackEnd() {
     handleNext();
+  }
+
+  // PUBLIC_INTERFACE
+  // Handle file input changes (for .mp3 upload)
+  function handleFileChange(e) {
+    setFileError(""); // Reset UI error
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    // Only accept .mp3 files
+    const mp3Files = files.filter(
+      f =>
+        f.type === "audio/mpeg" ||
+        (f.name && f.name.toLowerCase().endsWith(".mp3"))
+    );
+
+    const rejected = files.length !== mp3Files.length;
+
+    if (!mp3Files.length) {
+      setFileError("Please upload only .mp3 audio files.");
+      fileInputRef.current.value = ""; // reset for re-upload
+      return;
+    }
+
+    if (rejected) {
+      setFileError("Some selected files were not .mp3 and were ignored.");
+    }
+
+    // Create URLs for playback. Give mock album art & extract filename
+    const newTracks = mp3Files.map((file, idx) => {
+      // Provide rotating placeholder art to distinguish
+      const mockArts = [
+        "https://placehold.co/120x120/2ecc40/ffffff.png?text=Your+Song",
+        "https://placehold.co/120x120/ff8b4d/fff.png?text=MP3",
+        "https://placehold.co/120x120/8888FF/fff.png?text=Music",
+        "https://placehold.co/120x120/E87A41/fff.png?text=Upload",
+      ];
+      // Remove base extension for title
+      const name = file.name.replace(/\.mp3$/i, "");
+      return {
+        title: name,
+        artist: "You",
+        album: "Uploaded",
+        art: mockArts[(userTracks.length + idx) % mockArts.length],
+        src: URL.createObjectURL(file), // Blob URL
+        duration: null, // will be resolved later when played
+        isUploaded: true,
+      };
+    });
+
+    // Append to track list (avoid duplicate src by file name, for simplicity)
+    setUserTracks(prev => {
+      const prevSources = prev.map(t => t.src);
+      // Avoid duplicate files with same content (same file = same blob url?)
+      const uniqueNew = newTracks.filter(t => !prevSources.includes(t.src));
+      return [...prev, ...uniqueNew];
+    });
+    // Optionally, if upload, scroll to new track and select
+    setCurrentIdx(availableTracks.length + newTracks.length - 1);
   }
 
   // WIDE Stereo main style: much wider and less tall than before, retro details
@@ -252,6 +350,40 @@ function MainContainer() {
         fontFamily: "'Orbitron', 'Inter', monospace",
       }}
     >
+      {/* ========== MP3 FILE INPUT UI ========== */}
+      <div style={{
+          width: "100%", maxWidth: 825, marginBottom: 7, display: "flex", flexDirection: "row",
+          alignItems: "center", gap: "18px", justifyContent: "flex-end", marginTop: 4
+        }}
+      >
+        <label htmlFor="mp3-upload" style={{
+          fontFamily: "'Inter','monospace'",
+          fontWeight: 600, fontSize: "1.03em", color: "#1DB954", marginRight: 7,
+        }}>
+          Add your MP3:
+        </label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          id="mp3-upload"
+          accept=".mp3,audio/mpeg"
+          onChange={handleFileChange}
+          multiple
+          style={{
+            padding: "6px 6px", borderRadius: "6px", background: "#212721", color: "#fff", border: "1px solid #444",
+          }}
+          aria-label="Upload mp3 file"
+        />
+      </div>
+      {fileError && (
+        <div style={{
+            color: "#b9374b", background: "#211116e0", padding: "5px 13px", borderRadius: 7, fontFamily: "Inter, monospace",
+            fontWeight: 500, marginBottom: 9, maxWidth: 420, textAlign: "center"
+          }}>
+          {fileError}
+        </div>
+      )}
+
       {( !hasValidTracks || cannotPlayAny ) && (
         <div style={{
           color: "#ff5252",
@@ -401,7 +533,7 @@ function MainContainer() {
             <ul className="tracklist-ul-wide">
               {(hasValidTracks ? availableTracks : [fallbackTrack]).map((track, idx) => (
                 <li
-                  key={track.title}
+                  key={`${track.title}-${track.artist}-${track.src}`}
                   className={idx === currentIdx ? "selected-wide" : ""}
                   onClick={() => handleTrackClick(idx)}
                   style={idx === currentIdx ? { fontWeight: 700, textShadow: "0 0 6px #1DB95490" } : undefined}
@@ -416,8 +548,17 @@ function MainContainer() {
                     }}
                   />
                   <div className="track-meta">
-                    <div className="track-title">{track.title}</div>
-                    <div className="track-artist">{track.artist}</div>
+                    <div className="track-title" title={track.title}>
+                      {track.title}
+                    </div>
+                    <div className="track-artist">
+                      {track.artist}
+                      {track.isUploaded && <span style={{
+                          color: "#9aef67",
+                          marginLeft: 5,
+                          fontWeight: 500,
+                          fontSize: "0.86em"}}>(Uploaded)</span>}
+                    </div>
                   </div>
                   <span className="tracklist-dur">{formatTime(track.duration)}</span>
                 </li>
@@ -433,6 +574,7 @@ function MainContainer() {
           preload="auto"
           style={{ display: "none" }}
           tabIndex={-1}
+          /* Controls would be provided by UI, not native audio. */
         />
       </div>
 
