@@ -2,6 +2,95 @@ import React, { useRef, useState, useEffect } from "react";
 
 // PUBLIC_INTERFACE
 /**
+ * RetroCarEqualizer - Three-band (bass, mid, treble) UI + live audio frequency controls.
+ * @param {Object} props
+ *   - audioRef: ref to audio element
+ *   - webAudio: {
+ *        context: AudioContext,
+ *        eqNodes: [BiquadFilterNode, ...]
+ *     }
+ */
+function RetroCarEqualizer({ showPopup, hidePopup, style, webAudio, bands, setBands }) {
+  // Retro knob style for each slider, mapped to bands: [bass, mid, treble]
+  // Each band mapped to [-12, +12] dB
+  const labels = ["Bass", "Mid", "Treble"];
+  const accentColor = "#b6f951";
+  const bgColor = "#191c15";
+  return (
+    <div className="eq-popup-wide" style={style}>
+      <div style={{
+        fontWeight: 800, letterSpacing: "0.13em",
+        textAlign: "center", color: accentColor, marginBottom: "9px",
+        fontFamily: "'Orbitron', Inter, monospace",
+        fontSize: "1.1em"
+      }}>EQUALIZER</div>
+      <div style={{display:"flex", flexDirection:"column", gap:"12px", width:"auto", minWidth:100}}>
+        {bands.map((val, idx) => (
+          <div key={idx} style={{display:"flex", flexDirection:"column", alignItems:"center"}}>
+            <label style={{
+              fontSize:"0.98em", fontWeight:700,
+              color: accentColor,
+              marginBottom: "2px",
+              letterSpacing: ".09em",
+              textShadow: "0 0 2px #3c5f28aa"
+            }}>{labels[idx]}</label>
+            <input
+              type="range"
+              min={-12}
+              max={12}
+              value={val}
+              step={1}
+              onChange={e => {
+                const nv = +e.target.value;
+                setBands(prev => {
+                  const next = [...prev];
+                  next[idx] = nv;
+                  return next;
+                });
+                // Live update filter dB gain via webAudio.ref
+                if (webAudio && webAudio.eqNodes && webAudio.eqNodes[idx]) {
+                  if (idx === 1) {
+                    // Mid: Biquad Peaking filter adjusts gain
+                    webAudio.eqNodes[idx].gain.value = nv;
+                  } else {
+                    // Bass/Treble: shelving, dB gain
+                    webAudio.eqNodes[idx].gain.value = nv;
+                  }
+                }
+              }}
+              style={{
+                accentColor: accentColor,
+                width: 70, marginLeft: 0, marginRight: 0,
+                // Retro styling:
+                background: "linear-gradient(90deg, #595a5c 0%, #95e47a 45%, #aad49e 85%, #2f302b 100%)",
+                borderRadius: 5
+              }}
+              aria-label={labels[idx]}
+            />
+            <div style={{
+              fontSize:"0.92em", marginTop: "0.2em",
+              fontFamily: "monospace",
+              color: "#faffce",
+              height: "1.15em"
+            }}>
+              {val > 0 ? "+" : ""}{val} dB
+            </div>
+          </div>
+        ))}
+      </div>
+      <button className="btn" onClick={hidePopup}
+        style={{
+          marginTop:"15px", color: accentColor, background: "#232d22",
+          border: "2px solid #3ca671", borderRadius: 9,
+          fontWeight: 650, fontFamily:"Orbitron,Inter,monospace", width: "92px"
+        }}>
+        CLOSE
+      </button>
+    </div>
+  );
+}
+// PUBLIC_INTERFACE
+/**
  * MelodyMaster MainContainer - Car Stereo Look
  * Enhanced: Tracklist with mock album art, wide retro car stereo theme, animated visualizer when playing.
  */
