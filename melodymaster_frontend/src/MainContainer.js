@@ -9,6 +9,7 @@ import React, { useRef, useState, useEffect } from "react";
 // --- Sample music files (royalty free and short for demo) ---
 // For local demo, using open-access mp3 files. You can replace src with own files if needed.
 const audioTracks = [
+  // Keep only tracks with valid src (supported formats: mp3, wav, ogg, etc.)
   {
     title: "Time Machine Groove",
     artist: "RetroWave",
@@ -32,8 +33,17 @@ const audioTracks = [
     art: "https://i.imgur.com/9e3ldwV.png",
     src: "https://cdn.pixabay.com/audio/2023/04/24/audio_146a14c1ce.mp3",
     duration: 176, // 2:56
-  },
+  }
 ];
+// Fallback single test track if all above src URLs are broken (network or source removed):
+const fallbackTrack = {
+  title: "Sample Track (Add your own music!)",
+  artist: "MelodyMaster",
+  album: "Demo Album",
+  art: "https://i.imgur.com/IJQZRlm.png",
+  src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+  duration: 347 // Approx, not perfectly accurate
+};
 
 const stereoTheme = {
   primary: "#1DB954",
