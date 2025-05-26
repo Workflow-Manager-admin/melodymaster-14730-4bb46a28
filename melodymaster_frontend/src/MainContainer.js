@@ -781,15 +781,6 @@ function MainContainer() {
           .tracklist-ul-wide li:hover:not(.selected-wide) {
             background: #181f18;
           }
-          .tracklist-thumb {
-            width: 36px; height: 36px;
-            border-radius: 8px;
-            object-fit: cover;
-            margin-right: 6px;
-            margin-left: 2px;
-            background: #2d2f34;
-            box-shadow: 0 1px 7px #2adba633;
-          }
           .track-meta {
             flex: 3 3 120px;
             line-height: 1.19;
@@ -843,8 +834,6 @@ function MainContainer() {
           @media (max-width: 870px) {
             .wide-stereo-shell { min-width: 97vw; max-width: 99vw; padding: 3.3vw 0.5vw 7vw 2.4vw; border-radius: 8vw;}
             .stereo-flex { flex-direction: column; align-items: stretch; gap:3vw;}
-            .current-albumart-wrap { width: 90vw; height: 37vw; max-width: 340px; max-height: 155px;}
-            .album-art-img, .spinning-vinyl { width: 85vw; height: 85vw; max-width: 98px; max-height: 98px; }
             .tracklist-stack { min-width: 70vw; margin: 2vw !important;}
             .stereo-mainstack { min-width: unset;}
             .eq-popup-wide { right: 19vw; }
