@@ -11,13 +11,11 @@ import React, { useRef, useState, useEffect } from "react";
  */
 const TESTED_MP3 = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 
-// All tracks must have art. Art here uses illustrative mock album covers (unsplash, imgur, placeholder.com)
 const defaultTracks = [
   {
     title: "Sample Track (Add your own music!)",
     artist: "MelodyMaster",
     album: "Demo Album",
-    art: "https://i.imgur.com/IJQZRlm.png",
     src: TESTED_MP3,
     duration: 347,
   },
@@ -25,7 +23,6 @@ const defaultTracks = [
     title: "Time Machine Groove",
     artist: "RetroWave",
     album: "Neon Nights",
-    art: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=400&q=80",
     src: "https://cdn.pixabay.com/audio/2022/10/16/audio_12c716b9ba.mp3",
     duration: 201,
   },
@@ -33,7 +30,6 @@ const defaultTracks = [
     title: "Dashboard Dreams",
     artist: "Synth Escape",
     album: "Cruisin'",
-    art: "https://placehold.co/120x120/orange/FFFFFF.png?text=Synth+Wave",
     src: "https://cdn.pixabay.com/audio/2023/05/30/audio_1418e61dbb.mp3",
     duration: 248,
   },
@@ -41,7 +37,6 @@ const defaultTracks = [
     title: "FM Memories",
     artist: "Night Drive",
     album: "Afterglow",
-    art: "https://i.imgur.com/9e3ldwV.png",
     src: "https://cdn.pixabay.com/audio/2023/04/24/audio_146a14c1ce.mp3",
     duration: 176,
   },
@@ -51,7 +46,6 @@ const fallbackTrack = {
   title: "Sample Track (Add your own music!)",
   artist: "MelodyMaster",
   album: "Demo Album",
-  art: "https://i.imgur.com/IJQZRlm.png",
   src: TESTED_MP3,
   duration: 347,
 };
@@ -298,18 +292,11 @@ function MainContainer() {
     }
 
     const newTracks = mp3Files.map((file, idx) => {
-      const mockArts = [
-        "https://placehold.co/120x120/2ecc40/ffffff.png?text=Your+Song",
-        "https://placehold.co/120x120/ff8b4d/fff.png?text=MP3",
-        "https://placehold.co/120x120/8888FF/fff.png?text=Music",
-        "https://placehold.co/120x120/E87A41/fff.png?text=Upload",
-      ];
       const name = file.name.replace(/\.mp3$/i, "");
       return {
         title: name,
         artist: "You",
         album: "Uploaded",
-        art: mockArts[(userTracks.length + idx) % mockArts.length],
         src: URL.createObjectURL(file),
         duration: null,
         isUploaded: true,
@@ -419,18 +406,8 @@ function MainContainer() {
         </div>
 
         <div className="stereo-flex">
-          {/* Current Album Art Area */}
-          <div className="current-albumart-wrap">
-            <div className="current-albumart-glow" />
-            <img
-              src={currentTrack.art}
-              alt="Album Art"
-              className={`album-art-img ${playing ? "playing" : ""}`}
-            />
-            <div className={playing ? "spinning-vinyl vinyl-on" : "spinning-vinyl"} />
-          </div>
-          {/* Center block: digital, controls, visualizer */}
-          <div className="stereo-mainstack">
+          {/* No album art - center block: digital, controls, visualizer */}
+          <div className="stereo-mainstack" style={{marginLeft:0}}>
             <div className="digital-display-wide retro-screen-wide">
               <span className="display-track">{currentTrack.title}</span>
               <span className="display-artist">{currentTrack.artist}</span>
@@ -524,15 +501,6 @@ function MainContainer() {
                   onClick={() => handleTrackClick(idx)}
                   style={idx === currentIdx ? { fontWeight: 700, textShadow: "0 0 6px #1DB95490" } : undefined}
                 >
-                  <img
-                    src={track.art}
-                    alt="track art"
-                    className="tracklist-thumb"
-                    style={{
-                      border: idx === currentIdx ? `2.5px solid ${stereoTheme.primary}` : "2px solid #313",
-                      boxShadow: idx === currentIdx ? "0 1px 9px #4fdc7e44" : "0px 1px 3.5px #2229"
-                    }}
-                  />
                   <div className="track-meta">
                     <div className="track-title" title={track.title}>
                       {track.title}
